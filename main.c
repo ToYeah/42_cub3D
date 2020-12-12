@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/08 06:26:02 by totaisei          #+#    #+#             */
-/*   Updated: 2020/12/12 10:12:00 by totaisei         ###   ########.fr       */
+/*   Updated: 2020/12/12 15:33:30 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -71,7 +71,8 @@ typedef struct	s_player
 	double y;
 	double radius;
 	double turnDirection;
-	double walkDirection;
+	double verticalDirection;
+	double horizontalDirection;
 	double rotationAngle;
 	double moveSpeed;
 	double rotationSpeed;
@@ -100,7 +101,8 @@ void	init_player(t_player *player, double x, double y)
 	player->y = y;
 	player->radius = 3;
 	player->turnDirection = 0;
-	player->walkDirection = 0;
+	player->verticalDirection = 0;
+	player->horizontalDirection = 0;
 	player->rotationAngle = PI/2;
 	player->moveSpeed = 3;
 	player->rotationSpeed = 3 * (PI / 180);
@@ -174,30 +176,6 @@ void	img_fill(t_data *data, int x, int y)
 	}
 }
 
-void	put_square_deb(t_data *data, int x, int y, int fill)
-{
-	int pos_x;
-	int pos_y;
-	int index_x;
-	int index_y;
-
-	pos_x = x * GRIDSIZE ;//+ x *5;
-	pos_y = y * GRIDSIZE ;//+ y *5;
-	
-	index_y = GRIDSIZE;
-	while(index_y != 0)
-	{
-		index_x = GRIDSIZE;
-		while (index_x != 0)
-		{
-			if (index_x == 1 || index_x == GRIDSIZE || index_y == 1 || index_y == GRIDSIZE || fill)
-				my_mlx_pixel_put(data, index_x + pos_x, index_y + pos_y, 0x00FF0000);
-			index_x--;
-		}
-		index_y--;
-	}
-}
-
 void put_line_positive(t_line line, t_data *data, int posi, int nega)
 {
 	int d;
@@ -258,7 +236,7 @@ void put_line_negative(t_line line, t_data *data, int posi, int nega)
 	}
 		fprintf(stderr,"end:(%d,%d)\n\n",line.start_x, line.start_y);
 }
-/*
+
 void put_line(t_line line, t_data *data) 
 {
 	int positive_inc;
@@ -285,7 +263,7 @@ void put_line(t_line line, t_data *data)
 		put_line_positive(line, data, positive_inc, negative_inc);
 	}
 }
-*/
+
 void put_line(t_line line, t_data *data)
 {
 	int frac;
@@ -366,33 +344,41 @@ void put_player(t_data *data, t_player player)
 	}
 }
 
-//int		deal_key(int key_code, t_game *game)
-//{
-//	if (key_code == KEY_ESC)
-//		exit(0);
-//	else if (key_code == KEY_W)
-//		game->player->y -= 10;
-//	else if (key_code == KEY_S)
-//		game->player->y += 10;
-//	else if (key_code == KEY_A)
-//		game->player->x -= 10;
-//	else if (key_code == KEY_D)
-//		game->player->x += 10;
-//	g_update = 1;
-//	return (0);
-//}
+void 	update_player_pos(t_player *player)
+{
+	double new_pos_x;
+	double new_pos_y;
+
+	
+	player->rotationAngle += player->rotationSpeed * player->turnDirection;
+	new_pos_x = player->x;
+	new_pos_y = player->y;
+	new_pos_x += cos(player->rotationAngle) * player->verticalDirection * player->moveSpeed;
+	new_pos_y += sin(player->rotationAngle) * player->verticalDirection * player->moveSpeed;
+	new_pos_x += (cos(player->rotationAngle + PI/2)) * player->horizontalDirection * player->moveSpeed;
+	new_pos_y += (sin(player->rotationAngle + PI/2)) * player->horizontalDirection * player->moveSpeed;
+	if(map[(int)(floor(new_pos_y) / GRIDSIZE)][(int)(floor(new_pos_x) / GRIDSIZE)] == '0')
+	{
+		player->x = new_pos_x;
+		player->y = new_pos_y;
+	}
+}
 
 int		deal_key(int key_code, t_game *game)
 {
 	if (key_code == KEY_ESC)
 		exit(0);
 	else if (key_code == KEY_W)
-		game->player->walkDirection = +1;
+		game->player->verticalDirection = +1;
 	else if (key_code == KEY_S)
-		game->player->walkDirection = -1;
-	else if (key_code == KEY_A)
-		game->player->turnDirection = -1;
+		game->player->verticalDirection = -1;
 	else if (key_code == KEY_D)
+		game->player->horizontalDirection = +1;
+	else if (key_code == KEY_A)
+		game->player->horizontalDirection = -1;
+	else if (key_code == KEY_LEFT)
+		game->player->turnDirection = -1;
+	else if (key_code == KEY_RIGHT)
 		game->player->turnDirection = +1;
 	g_update = 1;
 	return (0);
@@ -404,22 +390,21 @@ int	main_loop(t_game *game)
 
 	if (g_update)
 	{
-		game->player->rotationAngle += game->player->rotationSpeed * game->player->turnDirection;
-		game->player->x += cos(game->player->rotationAngle) * game->player->walkDirection * game->player->moveSpeed;
-		game->player->y += sin(game->player->rotationAngle) * game->player->walkDirection * game->player->moveSpeed;
+		update_player_pos(game->player);
 		img_fill(game->data, 0, 0);
 		put_map(game->data, map, 10, 10);
 		centor.start_x = game->player->x;
 		centor.start_y = game->player->y;
 		centor.end_x = game->player->x + cos(game->player->rotationAngle) * 30;
 		centor.end_y = game->player->y + sin(game->player->rotationAngle) * 30;
-		fprintf(stderr,"update:(%d,%d)  (%d,%d)\n",centor.start_x,centor.start_y,centor.end_x,centor.end_y);
+		put_line(centor,game->data);
 		put_line(centor,game->data);
 		put_player(game->data, *(game->player));
 
 		mlx_put_image_to_window(game->mlx, game->win, game->data->img, 0, 0);
 	}
-	game->player->walkDirection = 0;
+	game->player->verticalDirection = 0;
+	game->player->horizontalDirection = 0;
 	game->player->turnDirection = 0;
 	g_update = 0;
 	return (0);
