@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/08 06:26:02 by totaisei          #+#    #+#             */
-/*   Updated: 2020/12/11 17:26:38 by totaisei         ###   ########.fr       */
+/*   Updated: 2020/12/12 10:12:00 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,7 @@
 #include "./minilibx-linux/mlx.h"
 #include <stdio.h>
 #include <math.h>
+#include <stdlib.h>
 
 #define TRUE 1
 #define FALSE 0
@@ -28,7 +29,18 @@
 
 #define GRIDSIZE 32
 
+#define KEY_ESC			65307
+#define KEY_W			119
+#define KEY_A			97
+#define KEY_S			115
+#define KEY_D			100
+#define KEY_LEFT		65361
+#define KEY_RIGHT		65363
 
+#define X_EVENT_KEY_PRESS		2
+#define X_EVENT_KEY_EXIT		17
+
+int g_update = 1;
 
 char map[10][10] = 
 {
@@ -46,8 +58,8 @@ char map[10][10] =
 
 typedef struct	s_data
 {
-	void*	img;
-	char*	addr;
+	void	*img;
+	char	*addr;
 	int		bits_per_pixel;
 	int		line_length;
 	int		endian;
@@ -55,8 +67,8 @@ typedef struct	s_data
 
 typedef struct	s_player
 {
-	int x;
-	int y;
+	double x;
+	double y;
 	double radius;
 	double turnDirection;
 	double walkDirection;
@@ -64,6 +76,15 @@ typedef struct	s_player
 	double moveSpeed;
 	double rotationSpeed;
 }				t_player;
+
+typedef struct	s_game
+{
+	void	*mlx;
+	void	*win;
+	t_data	*data;
+	t_player *player;
+}				t_game;
+
 
 typedef struct	s_line
 {
@@ -80,7 +101,7 @@ void	init_player(t_player *player, double x, double y)
 	player->radius = 3;
 	player->turnDirection = 0;
 	player->walkDirection = 0;
-	player->rotationAngle = PI / 2;
+	player->rotationAngle = PI/2;
 	player->moveSpeed = 3;
 	player->rotationSpeed = 3 * (PI / 180);
 
@@ -200,10 +221,11 @@ void put_line_positive(t_line line, t_data *data, int posi, int nega)
 		}
 		else
 			d += nega;
-		if(line.start_x < 0 || line.start_y < 0)
-			break;
+		//if(line.start_x < 0 || line.start_y < 0)
+		//	break;
 		my_mlx_pixel_put(data, line.start_x, line.start_y, 0x00FF0000);
 	}
+		//fprintf(stderr,"end:(%d,%d)\n",line.start_x, line.start_y);
 }
 
 void put_line_negative(t_line line, t_data *data, int posi, int nega)
@@ -229,12 +251,14 @@ void put_line_negative(t_line line, t_data *data, int posi, int nega)
 		}
 		else
 			d += nega;
-		if(line.start_x < 0 || line.start_y < 0)
+		if (line.start_x < 0 || line.start_y < 0)
 			break;
+		fprintf(stderr,"end:(%d,%d)\n\n",line.start_x, line.start_y);
 		my_mlx_pixel_put(data, line.start_x, line.start_y, 0x00FF0000);
 	}
+		fprintf(stderr,"end:(%d,%d)\n\n",line.start_x, line.start_y);
 }
-
+/*
 void put_line(t_line line, t_data *data) 
 {
 	int positive_inc;
@@ -261,6 +285,66 @@ void put_line(t_line line, t_data *data)
 		put_line_positive(line, data, positive_inc, negative_inc);
 	}
 }
+*/
+void put_line(t_line line, t_data *data)
+{
+	int frac;
+	int xNext, yNext, xStep, yStep, xDelta, yDelta;
+	int xself, yself, xEnd, yEnd;
+	xself = line.start_x;
+	yself = line.start_y;
+	xEnd = line.end_x;
+	yEnd = line.end_y;
+	xNext = xself;
+	yNext = yself;
+	xDelta = xEnd - xself;
+	yDelta = yEnd - yself;
+	xStep = 1;
+	yStep = 1;
+	if (xDelta < 0)
+		xStep = -1;
+	if (yDelta < 0)
+		yStep = -1;
+	xDelta = xDelta * 2;
+	yDelta = yDelta * 2;
+	if (xDelta < 0)
+		xDelta = -xDelta;
+	if (yDelta < 0)
+		yDelta = -yDelta;
+	my_mlx_pixel_put(data, xNext, yNext, 0x00FF0000);
+	// --A--
+	if (xDelta > yDelta)
+	{
+		frac = yDelta * 2 - xDelta;
+		while (xNext != xEnd)
+		{
+			if (frac >= 0)
+			{
+				yNext = yNext + yStep;
+				frac = frac - xDelta;
+			}
+			xNext = xNext + xStep;
+			frac = frac + yDelta;
+			my_mlx_pixel_put(data, xNext, yNext, 0x00FF0000);
+		}
+		// --B--
+	}
+	else
+	{
+		frac = xDelta * 2 - yDelta;
+		while (yNext != yEnd)
+		{
+			if (frac >= 0)
+			{
+				xNext = xNext + xStep;
+				frac = frac - yDelta;
+			}
+			yNext = yNext + yStep;
+			frac = frac + xDelta;
+			my_mlx_pixel_put(data, xNext, yNext, 0x00FF0000);
+		}
+	}
+}
 
 void put_player(t_data *data, t_player player)
 {
@@ -282,35 +366,81 @@ void put_player(t_data *data, t_player player)
 	}
 }
 
+//int		deal_key(int key_code, t_game *game)
+//{
+//	if (key_code == KEY_ESC)
+//		exit(0);
+//	else if (key_code == KEY_W)
+//		game->player->y -= 10;
+//	else if (key_code == KEY_S)
+//		game->player->y += 10;
+//	else if (key_code == KEY_A)
+//		game->player->x -= 10;
+//	else if (key_code == KEY_D)
+//		game->player->x += 10;
+//	g_update = 1;
+//	return (0);
+//}
+
+int		deal_key(int key_code, t_game *game)
+{
+	if (key_code == KEY_ESC)
+		exit(0);
+	else if (key_code == KEY_W)
+		game->player->walkDirection = +1;
+	else if (key_code == KEY_S)
+		game->player->walkDirection = -1;
+	else if (key_code == KEY_A)
+		game->player->turnDirection = -1;
+	else if (key_code == KEY_D)
+		game->player->turnDirection = +1;
+	g_update = 1;
+	return (0);
+}
+
+int	main_loop(t_game *game)
+{
+	t_line centor;
+
+	if (g_update)
+	{
+		game->player->rotationAngle += game->player->rotationSpeed * game->player->turnDirection;
+		game->player->x += cos(game->player->rotationAngle) * game->player->walkDirection * game->player->moveSpeed;
+		game->player->y += sin(game->player->rotationAngle) * game->player->walkDirection * game->player->moveSpeed;
+		img_fill(game->data, 0, 0);
+		put_map(game->data, map, 10, 10);
+		centor.start_x = game->player->x;
+		centor.start_y = game->player->y;
+		centor.end_x = game->player->x + cos(game->player->rotationAngle) * 30;
+		centor.end_y = game->player->y + sin(game->player->rotationAngle) * 30;
+		fprintf(stderr,"update:(%d,%d)  (%d,%d)\n",centor.start_x,centor.start_y,centor.end_x,centor.end_y);
+		put_line(centor,game->data);
+		put_player(game->data, *(game->player));
+
+		mlx_put_image_to_window(game->mlx, game->win, game->data->img, 0, 0);
+	}
+	game->player->walkDirection = 0;
+	game->player->turnDirection = 0;
+	g_update = 0;
+	return (0);
+}
+
 int main()
 {
-	void *mlx;
-	void *mlx_win;
-	t_data img;
-	t_line centor;
+	t_data data;
+	t_game game;
 	t_player player;
 
-
+	game.mlx = mlx_init();
+	game.win = mlx_new_window(game.mlx, WIDTH, HEIGHT, "mlx");
+	data.img = mlx_new_image(game.mlx, WIDTH, HEIGHT);
+	data.addr = mlx_get_data_addr(data.img, &data.bits_per_pixel, &data.line_length, &data.endian);
+	game.data = &data;
 	init_player(&player, 100,100);
+	game.player = &player;
 
-	mlx = mlx_init();
-	mlx_win = mlx_new_window(mlx, WIDTH, HEIGHT, "mlx");
-	img.img = mlx_new_image(mlx, WIDTH, HEIGHT);
-	img.addr = mlx_get_data_addr(img.img, &img.bits_per_pixel, &img.line_length, &img.endian);
-	img_fill(&img, 0, 0);
+	mlx_hook(game.win, X_EVENT_KEY_PRESS, 1, &deal_key, &game);
 
-
-	put_map(&img, map, 10, 10);
-	centor.start_x = player.x;
-	centor.start_y = player.y;
-	centor.end_x =   cos(player.rotationAngle) * 500;
-	centor.end_y =   sin(player.rotationAngle) * 500;
-	put_line(centor,&img);
-	put_player(&img, player);
-
-
-	mlx_put_image_to_window(mlx, mlx_win, img.img, 0, 0);
-	mlx_loop(mlx);
-
-	return (1);
+	mlx_loop_hook(game.mlx, &main_loop, &game);
+	mlx_loop(game.mlx);
 }
