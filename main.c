@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/08 06:26:02 by totaisei          #+#    #+#             */
-/*   Updated: 2020/12/14 15:43:53 by totaisei         ###   ########.fr       */
+/*   Updated: 2020/12/16 05:04:10 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,7 @@
 #define LEFT -1
 #define RIGHT 1
 
-#define WIDTH 640
+#define WIDTH 3
 #define HEIGHT 400
 #define MAP_WIDTH  10
 #define MAP_HEIGHT 10
@@ -59,11 +59,11 @@ char map[10][10] =
 {
 	{'1','1','1','1','1','1','1','1','1','1'},
 	{'1','0','0','0','0','0','0','0','0','1'},
-	{'1','0','0','1','0','0','0','0','0','1'},
+	{'1','0','0','1','0','0','1','0','0','1'},
 	{'1','1','1','0','0','0','1','1','0','1'},
 	{'1','0','0','0','0','0','0','1','1','1'},
 	{'1','0','1','0','0','0','0','0','0','1'},
-	{'1','0','1','0','0','0','0','0','0','1'},
+	{'1','0','1','0','0','1','1','1','0','1'},
 	{'1','0','1','0','0','0','0','0','0','1'},
 	{'1','0','1','1','1','0','0','0','0','1'},
 	{'1','1','1','1','1','1','1','1','1','1'}
@@ -493,7 +493,7 @@ void put_3D_wall(t_game *game, t_vector *rays)
 
 	int i = 0;
 
-	view_plane_distance = (WIDTH / 2) / normalized_angle(tan(FOV/2));
+	view_plane_distance = (WIDTH / 2) / normalized_angle(tan(g_fov/2));
 	while(i < g_raycount)
 	{
 		//view_wall_height = (GRIDSIZE / calc_distance_vector(game->player->pos, rays[i]) * view_plane_distance);
@@ -503,7 +503,12 @@ void put_3D_wall(t_game *game, t_vector *rays)
 		wall_bottom.x = i;
 		wall_bottom.y = (HEIGHT/2) - (view_wall_height/2);
 		wall_top.y = (HEIGHT/2) + (view_wall_height/2);
-		put_line(game->data, wall_bottom, wall_top, 0xFFFFFF);
+		if (!(calc_distance_vector(wall_bottom, wall_top) <= HEIGHT))
+		{
+			wall_top.y = 0;
+			wall_bottom.y = HEIGHT;
+		}
+		put_line(game->data, wall_bottom, wall_top, (int)0xFFFFFFFF);
 		i++;
 	}
 }
@@ -554,8 +559,8 @@ int	main_loop(t_game *game)
 int main()
 {
 	t_data data;
-	t_game game;
 	t_player player;
+	t_game game;
 
 	game.mlx = mlx_init();
 	game.win = mlx_new_window(game.mlx, WIDTH, HEIGHT, "mlx");

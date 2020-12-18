@@ -1,34 +1,16 @@
+#include "minilibx-linux/mlx.h"
+
 #include <stdio.h>
-#include <stdlib.h>
 
-void freeptr(char *ptr)
+
+int     main(void)
 {
-	//free(ptr);
-	//ptr = NULL;
-	printf("ptr = %p\n", ptr); //1つめ
-	printf("&ptr = %p\n", &ptr); //1つめ
-}
+    void    *mlx;
+    void    *img;
+    char    *relative_path = "./../texture/bluestone.xpm";
+    int     img_width;
+    int     img_height;
 
-int main()
-{
-	char *test = (char *)malloc(sizeof(char) * (10 + 1));
-	char *tmp = "1234567890";
-	int i = 0;
-	while (i < 10)
-	{
-		test[i] = tmp[i];
-		i++;
-	}
-	printf("test = %p\n", test); //1つめ
-	printf("&test = %p\n", &test); //1つめ
-	printf("test(str) = %s\n",test);
-	printf("\n\n");
-
-	freeptr(test); 
-	printf("\n\n");
-	printf("test = %p\n", test); //1つめ
-	printf("&test = %p\n", &test); //1つめ
-	printf("test(str) = %s\n",test);
-
-	return 0;
+    mlx = mlx_init();
+    img = mlx_xpm_file_to_image(mlx, relative_path, &img_width, &img_height);
 }
