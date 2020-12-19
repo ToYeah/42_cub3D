@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/16 02:33:18 by totaisei          #+#    #+#             */
-/*   Updated: 2020/12/18 16:28:18 by totaisei         ###   ########.fr       */
+/*   Updated: 2020/12/19 13:40:58 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,8 @@
 #include <limits.h>
 #include <math.h>
 #include <fcntl.h>
+#include <errno.h>
+#include <string.h>
 
 #include "my_libft/libft.h"
 
@@ -30,7 +32,7 @@
 #include <stdio.h>
 /////////////////////////////////////////////////
 
-
+#define DEF_ERR_MSG "Error"
 
 typedef struct	s_vector
 {
@@ -41,14 +43,16 @@ typedef struct	s_vector
 typedef struct	s_texture
 {
 	void 	*img;
-	int		img_width;
-	int		img_height;
+	char	*addr;
+	int		bits_per_pixel;
+	int		line_length;
+	int		endian;
+	int		width;
+	int		height;
 }				t_texture;
 
 typedef struct	s_config
 {
-	int			max_width;
-	int			max_height;
 	int			window_width;
 	int			window_height;
 	int			floor_color;
@@ -58,6 +62,11 @@ typedef struct	s_config
 	t_texture	west_texture;
 	t_texture	east_texture;
 	t_texture	sprite_texture;
+	int			map_height;
+	t_bool		map_flag;
+	int			start_x;
+	int			start_y;
+	int			item_count;
 }				t_config;
 
 
@@ -82,6 +91,7 @@ typedef struct	s_player
 	double rotationSpeed;
 }				t_player;
 
+
 typedef struct	s_game
 {
 	void	*mlx;
@@ -89,6 +99,7 @@ typedef struct	s_game
 	t_data	*data;
 	t_player *player;
 	t_config config;
+	char **map;
 }				t_game;
 
 

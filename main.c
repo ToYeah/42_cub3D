@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/08 06:26:02 by totaisei          #+#    #+#             */
-/*   Updated: 2020/12/16 05:04:10 by totaisei         ###   ########.fr       */
+/*   Updated: 2020/12/19 15:38:12 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,7 @@
 #define LEFT -1
 #define RIGHT 1
 
-#define WIDTH 3
+#define WIDTH 600
 #define HEIGHT 400
 #define MAP_WIDTH  10
 #define MAP_HEIGHT 10
@@ -39,7 +39,6 @@
 #define RAY_LENGTH 150;
 
 #define FOV 60
-
 #define KEY_ESC			65307
 #define KEY_W			119
 #define KEY_A			97
@@ -59,13 +58,13 @@ char map[10][10] =
 {
 	{'1','1','1','1','1','1','1','1','1','1'},
 	{'1','0','0','0','0','0','0','0','0','1'},
-	{'1','0','0','1','0','0','1','0','0','1'},
-	{'1','1','1','0','0','0','1','1','0','1'},
+	{'1','0','1','1','0','0','0','0','0','1'},
+	{'1','1','0','0','0','0','0','0','0','1'},
 	{'1','0','0','0','0','0','0','1','1','1'},
-	{'1','0','1','0','0','0','0','0','0','1'},
-	{'1','0','1','0','0','1','1','1','0','1'},
-	{'1','0','1','0','0','0','0','0','0','1'},
-	{'1','0','1','1','1','0','0','0','0','1'},
+	{'1','0','0','0','0','0','0','0','0','1'},
+	{'1','0','0','0','0','0','0','0','0','1'},
+	{'1','0','0','0','0','0','0','0','0','1'},
+	{'1','0','0','0','0','0','0','0','0','1'},
 	{'1','1','1','1','1','1','1','1','1','1'}
 };
 
@@ -129,9 +128,8 @@ void	init_player(t_player *player, double x, double y)
 	player->verticalDirection = 0;
 	player->horizontalDirection = 0;
 	player->rotationAngle = PI;
-	player->moveSpeed = 3;
-	player->rotationSpeed = 3 * (PI / 180);
-
+	player->moveSpeed = 10;
+	player->rotationSpeed = 5 * (PI / 180);
 }
 
 void	my_mlx_pixel_put(t_data *data, int x, int y, int color)
@@ -307,8 +305,6 @@ void put_minimap(t_game *game, t_vector *rays)
 	}
 	put_player(game->data, game->player->pos);
 }
-
-
 
 int validate_collision(t_vector pos)// char **map;
 {
@@ -497,7 +493,7 @@ void put_3D_wall(t_game *game, t_vector *rays)
 	while(i < g_raycount)
 	{
 		//view_wall_height = (GRIDSIZE / calc_distance_vector(game->player->pos, rays[i]) * view_plane_distance);
-		view_wall_height = (GRIDSIZE / calc_distance_vector(game->player->pos, rays[i]) * view_plane_distance);
+		view_wall_height = (GRIDSIZE / (calc_distance_vector(game->player->pos, rays[i]) * cos()) * view_plane_distance);
 		
 		wall_top.x = i;
 		wall_bottom.x = i;
@@ -518,17 +514,17 @@ int		deal_key(int key_code, t_game *game)
 	if (key_code == KEY_ESC)
 		exit(0);
 	else if (key_code == KEY_W)
-		game->player->verticalDirection = +1;
+		game->player->verticalDirection = 1;
 	else if (key_code == KEY_S)
 		game->player->verticalDirection = -1;
 	else if (key_code == KEY_D)
-		game->player->horizontalDirection = +1;
+		game->player->horizontalDirection = 1;
 	else if (key_code == KEY_A)
 		game->player->horizontalDirection = -1;
 	else if (key_code == KEY_LEFT)
 		game->player->turnDirection = -1;
 	else if (key_code == KEY_RIGHT)
-		game->player->turnDirection = +1;
+		game->player->turnDirection = 1;
 	g_update = 1;
 	return (0);
 }

@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/16 03:40:39 by totaisei          #+#    #+#             */
-/*   Updated: 2020/12/18 16:39:51 by totaisei         ###   ########.fr       */
+/*   Updated: 2020/12/19 15:26:15 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,9 @@
 
 #define MAX_RESOLUTION_SIZE 100000
 #define MIN_RESOLUTION_SIZE 100
+#define MAX_MAP_SIZE 200
+#define FLOOR_CHAR '-'
+#define ITEM_CHAR '@'
 
 typedef enum	e_identifier
 {
@@ -44,7 +47,6 @@ typedef struct	s_ident_line
 	char 			*line;
 }				t_ident_line;
 
-
 void init_config(t_config *conf)
 {
 	conf->window_width = -1;
@@ -56,8 +58,13 @@ void init_config(t_config *conf)
 	conf->sprite_texture.img = NULL;
 	conf->floor_color = -1;
 	conf->ceiling_color = -1;
-}
+	conf->map_flag = FALSE;
+	conf->map_height = 0;
+	conf->start_x = 0;
+	conf->start_y = 0;
+	conf->item_count = 0;
 
+}
 
 char	*ft_through_space(char *str)
 {
@@ -77,13 +84,28 @@ char	*ft_through_digit(char *str)
 	return str;
 }
 
-t_identifier find_identifier(char *line)
+t_bool is_map_line(char *str)
+{
+	int i;
+
+	i = 0;
+	while(str[i])
+	{
+		if (!(ft_strchr(" 012NEWS", str[i])))
+			return FALSE;
+		i++;
+	}
+	return TRUE;
+}
+
+t_identifier select_identifier(char *line)
 {
 	if (!line)
 		return UNKNOWN;
 	if(*line == '\0')
 		return NEWLINE;
-	line = ft_through_space(line);
+	if (is_map_line(line))
+		return MAP;
 	if(ft_strncmp(line, "R ", 2) == 0)
 		return RESOLUTION;
 	if(ft_strncmp(line, "NO ", 3) == 0)
@@ -153,17 +175,20 @@ t_bool atoi_range(char *str, int max, int min, int *result)
 
 t_status valid_resolution(t_game *game, t_ident_line input)
 {
-	if (*(input.status) != NOT_ENTERED)
+	int max_width;
+	int max_height;
+	if (*(input.status) != NOT_ENTERED || game->config.map_flag)
 		return FAILURE;
 	input.line += 1;
 	input.line = ft_through_space(input.line);
 	if (is_resolution_format(input.line))
 	{
-		if (atoi_range(input.line, game->config.max_width, MIN_RESOLUTION_SIZE, &(game->config.window_width)))
+		mlx_get_screen_size(game->mlx, &max_width, &max_height);
+		if (atoi_range(input.line, max_width, MIN_RESOLUTION_SIZE, &(game->config.window_width)))
 		{
 			input.line = ft_through_digit(input.line);
 			input.line = ft_through_space(input.line);
-			if (atoi_range(input.line, game->config.max_height, MIN_RESOLUTION_SIZE, &(game->config.window_height)))
+			if (atoi_range(input.line, max_height, MIN_RESOLUTION_SIZE, &(game->config.window_height)))
 				return ENTERED;
 		}
 	}
@@ -173,15 +198,19 @@ t_status valid_resolution(t_game *game, t_ident_line input)
 t_status open_texture(t_game *game, t_texture *texture, t_ident_line input)
 {
 	input.line = ft_through_space(input.line);
-	texture->img = mlx_xpm_file_to_image(game->mlx, input.line, &(texture->img_width), &(texture->img_height));
+	texture->img = mlx_xpm_file_to_image(game->mlx, input.line, &(texture->width), &(texture->height));
 	if (texture->img != NULL)
+	{
+		texture->addr = mlx_get_data_addr(texture->img, &(texture->bits_per_pixel),
+		&(texture->line_length), &(texture->endian));
 		return ENTERED;
+	}
 	return FAILURE;
 }
 
 t_status valid_texture_path(t_game *game, t_ident_line input)
 {
-	if (*(input.status) != NOT_ENTERED)
+	if (*(input.status) != NOT_ENTERED || game->config.map_flag)
 		return FAILURE;
 	while(*input.line != ' ')
 		input.line++;
@@ -238,7 +267,7 @@ t_status valid_color(t_game *game, t_ident_line input)
 
 	input.line += 1;
 	input.line = ft_through_space(input.line);
-	if (*(input.status) != NOT_ENTERED || !(is_color_format(input.line)))
+	if (*(input.status) != NOT_ENTERED || game->config.map_flag || !(is_color_format(input.line)))
 		return FAILURE;
 	parameter[0] = ft_atoi(input.line);
 	input.line = ft_through_digit(input.line);
@@ -254,8 +283,41 @@ t_status valid_color(t_game *game, t_ident_line input)
 	return ENTERED;
 }
 
-t_status tmp_valid(t_game *game, t_ident_line input)
+t_status unknown_valid(t_game *game, t_ident_line input)
 {
+	return FAILURE;
+}
+
+t_status valid_new_line(t_game *game, t_ident_line input)
+{
+	if (game->config.map_flag == FALSE)
+		return NOT_ENTERED;
+	return FAILURE;
+}
+
+t_status valid_map(t_game *game, t_ident_line input)
+{
+	int i;
+
+	i = 0;
+	game->config.map_flag = TRUE;//NANKAI MO YOBARERU NO IYA YAWA
+	if (input.status == FAILURE || ft_strlen(input.line) > MAX_MAP_SIZE)
+		return FAILURE;
+	while (input.line[i])
+	{
+		game->map[game->config.map_height][i] = input.line[i];
+		if (input.line[i] == 'N' || input.line[i] == 'E' || input.line[i] == 'W' || input.line[i] == 'S')
+		{
+			if (!(game->config.start_x == 0 && game->config.start_y == 0))
+				return FAILURE;
+			game->config.start_x = i;
+			game->config.start_y = game->config.map_height;
+		}
+		if (input.line[i] == '2')
+			game->config.item_count++;
+		i++;
+	}
+	game->config.map_height++;
 	return ENTERED;
 }
 
@@ -269,47 +331,154 @@ void init_valid_funcs(t_status	(**valid_funcs)(t_game *, t_ident_line))
 	valid_funcs[(int)SPRITE]  = valid_texture_path;
 	valid_funcs[(int)FLOOR] = valid_color;
 	valid_funcs[(int)CEILLING] = valid_color;
-	valid_funcs[(int)MAP] = tmp_valid;
-	valid_funcs[(int)NEWLINE] = tmp_valid;
-	valid_funcs[(int)UNKNOWN] = tmp_valid;
+	valid_funcs[(int)MAP] = valid_map;
+	valid_funcs[(int)NEWLINE] = valid_new_line;
+	valid_funcs[(int)UNKNOWN] = unknown_valid;
 }
 
-t_bool valid_cub(t_game *game, char *path)
+t_bool cub_flood_fill(char **map, int x, int y)
 {
-	int gnl_result;
-	int fd;
-	t_status statuses[(int)UNKNOWN + 1];
-	t_ident_line ident_line;
-	t_status	(*valid_funcs[(int)UNKNOWN + 1])(t_game *, t_ident_line);
+	if (map[y][x] == '1' || map[y][x] == FLOOR_CHAR || map[y][x] == ITEM_CHAR)
+		return TRUE;
+	if (map[y][x] == ' ')
+	{
+		map[y][x] = 'x';
+		return FALSE;
+	}
+	if (map[y][x] == '0')
+		map[y][x] = FLOOR_CHAR;
+	if (map[y][x] == '2')
+		map[y][x] = ITEM_CHAR;
+	if (cub_flood_fill(map, x + 1, y) && cub_flood_fill(map, x - 1, y) &&
+	cub_flood_fill(map, x, y + 1) && cub_flood_fill(map, x, y - 1))
+		return TRUE;
+	return FALSE;
+}
 
+char *select_conf_err_msg(int ident)
+{
+	if (ident == (int)RESOLUTION)
+		return "Invalid Resolution.";
+	else if (ident == (int)NORTH)
+		return "Invalid North texture.";
+	else if (ident == (int)SOUTH)
+		return "Invalid South texture.";
+	else if (ident == (int)WEST)
+		return "Invalid West texture.";
+	else if (ident == (int)EAST)
+		return "Invalid Easr texture.";
+	else if (ident == (int)SPRITE)
+		return "Invalid Sprite texture.";
+	else if (ident == (int)FLOOR)
+		return "Invalid Floor color.";
+	else if (ident == (int)CEILLING)
+		return "Invalid Ceiling texture.";
+	else if (ident == (int)MAP)
+		return "Invalid Map.";
+	else if (ident == (int)NEWLINE)
+		return "Invalid new line.";
+	else
+		return "Contains invalid line.";
+}
+
+t_bool put_err_msg(char *err_msg)
+{
+	ft_putendl_fd(DEF_ERR_MSG, 1);
+	ft_putendl_fd(err_msg, 1);
+	return FALSE;
+}
+
+t_bool valid_statuses(t_status *statuses)
+{
+	int i;
+
+	i = 0;
+	while(i < (int)UNKNOWN + 1)
+	{
+		if (statuses[i] == FAILURE)
+			return put_err_msg(select_conf_err_msg(i));
+		if (i < (int)NEWLINE && statuses[i] == NOT_ENTERED)
+			return put_err_msg(select_conf_err_msg(i));
+		i++;
+	}
+	return TRUE;
+}
+
+t_bool valid_cub(t_game *game, int fd)
+{
+	int				gnl_result;
+	t_status		statuses[(int)UNKNOWN + 1];
+	t_ident_line	ident_line;
+	t_status		(*valid_funcs[(int)UNKNOWN + 1])(t_game *, t_ident_line);
 
 	int i = 0;
 	while(i < (int)UNKNOWN + 1)
 		statuses[i++] = NOT_ENTERED;
-
 	gnl_result = 1;
 	init_config(&(game->config));
-
-	if((fd = open(path, O_RDONLY)) < 0)
-		return 1;//error
 	init_valid_funcs(valid_funcs);
-
-	while(gnl_result == 1) // TODO if gnl_res == -1
+	while(gnl_result == 1)
 	{
 		gnl_result = ft_get_next_line(fd, &(ident_line.line));
-		ident_line.ident = find_identifier(ident_line.line);
+		ident_line.ident = select_identifier(ident_line.line);
 		ident_line.status = &(statuses[(int)ident_line.ident]);
 		*(ident_line.status) = valid_funcs[(int)ident_line.ident](game, ident_line);
-		if(ident_line.ident != UNKNOWN)
-			fprintf(stderr,"%3d | %d | %s\n",ident_line.ident, *ident_line.status, ident_line.line);
-		ft_safe_free(&(ident_line.line));
+		ft_safe_free_char(&(ident_line.line));
 	}
+	if (gnl_result != 0)
+		return put_err_msg(strerror(errno));
+	return valid_statuses(statuses);
+}
+
+char **malloc_map(size_t x, size_t y)
+{
+	char **result;
+	int i;
+
 	i = 0;
-	while(i < (int)UNKNOWN + 1)
+	if (!(result = malloc(sizeof(char *) * y)))
+		return NULL;
+	while(i < y)
 	{
-		if (statuses[i++] != ENTERED)
-			return FALSE;
+		if (!(result[i] = malloc(x)))
+		{
+			i--;
+			while(i >= 0)
+			{
+				ft_safe_free_char(&result[i]);
+				i--;
+			}
+			free(result);
+			result = NULL;
+			return NULL;
+		}
+		ft_memset(result[i], ' ', x);
+		i++;
 	}
+	return result;
+}
+
+void map_print(t_game *game, int width)
+{
+	int i;
+
+	i = 0;
+	while(i < game->config.map_height)
+	{
+		fprintf(stderr, "%.*s\n", width,game->map[i]);
+		i++;
+	}
+}
+
+t_bool set_configuration(t_game *game, char *path)
+{
+	int fd;
+	if((fd = open(path, O_RDONLY)) < 0)
+		return put_err_msg(strerror(errno));
+	if (!valid_cub(game, fd))
+		return FALSE;
+	if (!cub_flood_fill(game->map, game->config.start_x, game->config.start_y))
+		return put_err_msg("Unclosed map.");
 	return TRUE;
 }
 
@@ -317,7 +486,9 @@ int main(int argc, char **argv)
 {
 	t_data data;
 	t_game game;
-	char map[200][200];
+	int fd;
+
+	game.map = malloc_map(MAX_MAP_SIZE, MAX_MAP_SIZE);
 
 	game.mlx = mlx_init();
 	//game.win = mlx_new_window(game.mlx, 500, 500, "mlx");
@@ -326,10 +497,10 @@ int main(int argc, char **argv)
 	//game.data = &data;
 	//if(argc != 2)
 	//	return 1;//error
-	mlx_get_screen_size(game.mlx, &(game.config.max_width), &(game.config.max_height));
-	t_bool a = valid_cub(&game, argv[1]);
-	fprintf(stderr, "%d\n", a);
-	fprintf(stderr, "width:%d height:%d\n", game.config.window_width, game.config.window_height);
-
+	t_bool flag = set_configuration(&game, argv[1]);
+	if (!flag)
+		return 1;
+	
+	map_print(&game, 80);
 	mlx_loop(game.mlx);
 }
