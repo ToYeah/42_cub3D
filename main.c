@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/08 06:26:02 by totaisei          #+#    #+#             */
-/*   Updated: 2020/12/19 15:38:12 by totaisei         ###   ########.fr       */
+/*   Updated: 2020/12/20 07:04:56 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,9 +19,8 @@
 #include <math.h>
 #include <stdlib.h>
 #include <limits.h>
+#include "cub_base.h"
 
-#define TRUE 1
-#define FALSE 0
 #define PI 3.14159265358979323846
 #define UP -1
 #define DOWN 1
@@ -50,58 +49,19 @@
 #define X_EVENT_KEY_PRESS		2
 #define X_EVENT_KEY_EXIT		17
 
-int g_update = 1;
-int g_raycount = WIDTH / COLUMUN_WIDTH;
-double g_fov = FOV * (PI / 180);
-
 char map[10][10] = 
 {
 	{'1','1','1','1','1','1','1','1','1','1'},
 	{'1','0','0','0','0','0','0','0','0','1'},
-	{'1','0','1','1','0','0','0','0','0','1'},
-	{'1','1','0','0','0','0','0','0','0','1'},
-	{'1','0','0','0','0','0','0','1','1','1'},
 	{'1','0','0','0','0','0','0','0','0','1'},
 	{'1','0','0','0','0','0','0','0','0','1'},
+	{'1','0','0','1','1','1','0','0','0','1'},
+	{'1','0','0','1','0','1','0','0','0','1'},
+	{'1','0','0','1','1','1','0','0','0','1'},
 	{'1','0','0','0','0','0','0','0','0','1'},
 	{'1','0','0','0','0','0','0','0','0','1'},
 	{'1','1','1','1','1','1','1','1','1','1'}
 };
-
-typedef struct	s_vector
-{
-	double x;
-	double y;
-}				t_vector;
-
-typedef struct	s_data
-{
-	void	*img;
-	char	*addr;
-	int		bits_per_pixel;
-	int		line_length;
-	int		endian;
-}				t_data;
-
-typedef struct	s_player
-{
-	t_vector pos;
-	double radius;
-	double turnDirection;
-	double verticalDirection;
-	double horizontalDirection;
-	double rotationAngle;
-	double moveSpeed;
-	double rotationSpeed;
-}				t_player;
-
-typedef struct	s_game
-{
-	void	*mlx;
-	void	*win;
-	t_data	*data;
-	t_player *player;
-}				t_game;
 
 typedef struct	s_ray
 {
@@ -109,15 +69,26 @@ typedef struct	s_ray
 	int horizontal_direction;
 	int vertical_direction;
 	t_vector collision_point;
+	t_bool select_horizontal;
 }				t_ray;
 
-typedef struct	s_line
+typedef struct	t_wall
 {
-	int start_x;
-	int start_y;
-	int end_x;
-	int end_y;
-}				t_line;
+	int	win_x;
+	int	win_y;
+	double offset_x;
+	int	wall_height;
+}				t_wall;
+
+
+t_vector vector_constructor(double x, double y)
+{
+	t_vector result;
+	result.x = x;
+	result.y = y;
+	return result;
+}
+
 
 void	init_player(t_player *player, double x, double y)
 {
@@ -138,6 +109,11 @@ void	my_mlx_pixel_put(t_data *data, int x, int y, int color)
 
 	dst = data->addr + (y * data->line_length + x * (data->bits_per_pixel / 8));
 	*(unsigned int*)dst = color;
+}
+
+unsigned int extract_color(t_texture *texture, int x, int y)
+{
+	return *(int *)((texture->addr) + (y * texture->line_length) + (x * (texture->bits_per_pixel / 8)));
 }
 
 void	put_square(t_data *data, int x, int y, int fill)
@@ -187,18 +163,28 @@ void	put_map(t_data *data,char map[10][10], int x_len, int y_len)
 	}
 }
 
-void	img_fill(t_data *data, int x, int y)
+void	put_background(t_game *game)
 {
 	int i;
 	int j;
 
 	i = 0;
-	while(i < HEIGHT)
+	while(i < game->config.window_height / 2)
 	{
 		j = 0;
-		while(j < WIDTH)
+		while(j < game->config.window_width)
 		{
-			my_mlx_pixel_put(data, j, i, 0x00999999);
+			my_mlx_pixel_put(game->data, j, i, game->config.ceiling_color);
+			j++;
+		}
+		i++;
+	}
+	while(i < game->config.window_height)
+	{
+		j = 0;
+		while(j < game->config.window_width)
+		{
+			my_mlx_pixel_put(game->data, j, i, game->config.floor_color);
 			j++;
 		}
 		i++;
@@ -285,22 +271,22 @@ void put_player(t_data *data, t_vector player_pos)
 	}
 }
 
-void put_minimap(t_game *game, t_vector *rays)
+void put_minimap(t_game *game)
 {
 	int i = 0;
 	t_vector mini_player;
 	t_vector mini_ray;
 
 	put_map(game->data, map, 10, 10);
-	while(i < g_raycount)
+	while(i < game->ray_max)
 	{
 		mini_player = game->player->pos;
 		mini_player.x *= MINI_MAP_SCALE;
 		mini_player.y *= MINI_MAP_SCALE;
-		mini_ray = rays[i];
-		mini_ray.x *= MINI_MAP_SCALE;
-		mini_ray.y *= MINI_MAP_SCALE;
-		put_line(game->data, mini_player, mini_ray, 0x00FF0000);
+		//mini_ray = rays[i];
+		//mini_ray.x *= MINI_MAP_SCALE;
+		//mini_ray.y *= MINI_MAP_SCALE;
+		//put_line(game->data, mini_player, mini_ray, 0x00FF0000);
 		i++;
 	}
 	put_player(game->data, game->player->pos);
@@ -363,24 +349,24 @@ double	calc_distance_vector(t_vector start, t_vector end)
 	return (sqrt((start.x - end.x) *(start.x - end.x) + (start.y - end.y) *(start.y - end.y)));
 }
 
-int		calc_horizontal_intersection(t_vector player_pos, t_ray format, t_vector *result)
+t_bool	calc_horizontal_intersection(t_vector player_pos, t_ray *ray, t_vector *result)
 {
 	t_vector intersection;
 	t_vector collision_point;
 	t_vector step;
 
 	intersection.y = floor(player_pos.y / GRIDSIZE) * GRIDSIZE;
-	if (format.vertical_direction == DOWN)
+	if (ray->vertical_direction == DOWN)
 		intersection.y += GRIDSIZE;
-	intersection.x = player_pos.x + (intersection.y - player_pos.y) / tan(format.angle);
-	step.y = GRIDSIZE * format.vertical_direction;
-	step.x = GRIDSIZE / tan(format.angle);
-	if((step.x < 0 && format.horizontal_direction == RIGHT) || (step.x > 0 && format.horizontal_direction == LEFT))
+	intersection.x = player_pos.x + (intersection.y - player_pos.y) / tan(ray->angle);
+	step.y = GRIDSIZE * ray->vertical_direction;
+	step.x = GRIDSIZE / tan(ray->angle);
+	if((step.x < 0 && ray->horizontal_direction == RIGHT) || (step.x > 0 && ray->horizontal_direction == LEFT))
 		step.x *= -1;
 	collision_point = intersection;
 	while (collision_point.x >= 0 && collision_point.y >= 0 && collision_point.x <= WIDTH && collision_point.y <= HEIGHT)
 	{
-		if (validate_collision_direction(collision_point,format.vertical_direction, TRUE))
+		if (validate_collision_direction(collision_point,ray->vertical_direction, TRUE))
 		{
 			collision_point.x += step.x;
 			collision_point.y += step.y;
@@ -395,7 +381,7 @@ int		calc_horizontal_intersection(t_vector player_pos, t_ray format, t_vector *r
 	return FALSE;
 }
 
-int	calc_vertical_intersection(t_vector player_pos, t_ray format, t_vector *result)
+t_bool	calc_vertical_intersection(t_vector player_pos, t_ray *ray, t_vector *result)
 {
 	t_vector intersection;
 	t_vector collision_point;
@@ -403,17 +389,17 @@ int	calc_vertical_intersection(t_vector player_pos, t_ray format, t_vector *resu
 	int flag;
 
 	intersection.x = floor(player_pos.x / GRIDSIZE) * GRIDSIZE;
-	if (format.horizontal_direction == RIGHT)
+	if (ray->horizontal_direction == RIGHT)
 		intersection.x += GRIDSIZE;
-	intersection.y = player_pos.y + (intersection.x - player_pos.x) * tan(format.angle);
-	step.x = GRIDSIZE * format.horizontal_direction;
-	step.y = GRIDSIZE * tan(format.angle);
-	if((step.y < 0 && format.vertical_direction == DOWN) || (step.y > 0 && format.vertical_direction == UP))
+	intersection.y = player_pos.y + (intersection.x - player_pos.x) * tan(ray->angle);
+	step.x = GRIDSIZE * ray->horizontal_direction;
+	step.y = GRIDSIZE * tan(ray->angle);
+	if((step.y < 0 && ray->vertical_direction == DOWN) || (step.y > 0 && ray->vertical_direction == UP))
 		step.y *= -1;
 	collision_point = intersection;
 	while (collision_point.x >= 0 && collision_point.y >= 0 && collision_point.x <= WIDTH && collision_point.y <= HEIGHT)
 	{
-		if (validate_collision_direction(collision_point, format.horizontal_direction, FALSE))
+		if (validate_collision_direction(collision_point, ray->horizontal_direction, FALSE))
 		{
 			collision_point.x += step.x;
 			collision_point.y += step.y;
@@ -428,86 +414,121 @@ int	calc_vertical_intersection(t_vector player_pos, t_ray format, t_vector *resu
 	return FALSE;
 }
 
-t_vector	cast_single_ray(t_player player, double angle, t_game *game)//, char **map)
+double	correct_angle(double angle)
 {
-	t_vector horizontal_intersection;
-	t_vector vertical_intersection;
-	t_ray format;
-	int horizontal_flag;
-	int vertical_flag;
-
-	format.angle = normalized_angle(angle);
-	if(3.1415 < format.angle && format.angle < 3.1416)
-		format.angle = 3.14;
-	if(-0.0001 < format.angle && format.angle < 0.0001)
-		format.angle = 0.001;
-	format.vertical_direction = UP;
-	if (format.angle > 0 && format.angle < PI)
-		format.vertical_direction = DOWN;
-	format.horizontal_direction = LEFT;
-	if (format.angle < (PI / 2) || format.angle > (PI / 2 + PI))
-		format.horizontal_direction = RIGHT;
-	horizontal_flag = calc_horizontal_intersection(player.pos, format, &horizontal_intersection);
-	vertical_flag = calc_vertical_intersection(player.pos, format, &vertical_intersection);
-
-	if (horizontal_flag && !vertical_flag)
-		return horizontal_intersection;
-	if (!horizontal_flag && vertical_flag)
-		return vertical_intersection;
-	if (calc_distance_vector(player.pos, horizontal_intersection) >= calc_distance_vector(player.pos ,vertical_intersection))
-		return vertical_intersection;
-	else
-		return horizontal_intersection;
-	
+	if(3.1415 < angle && angle < 3.1416)
+		angle = 3.14;
+	if(-0.0001 < angle && angle < 0.0001)
+		angle = 0.001;
+	return angle;
 }
 
-void	cast_all_ray(t_game *game, t_vector *rays)
+void	set_ray_direction(t_ray *ray)
+{
+	ray->vertical_direction = UP;
+	if (ray->angle > 0 && ray->angle < PI)
+		ray->vertical_direction = DOWN;
+	ray->horizontal_direction = LEFT;
+	if (ray->angle < (PI / 2) || ray->angle > (PI / 2 + PI))
+		ray->horizontal_direction = RIGHT;
+}
+
+void	cast_single_ray(t_game *game, t_ray *ray)//, char **map)
+{
+	t_vector vertical_intersection;
+	t_bool horizontal_flag;
+
+	ray->angle = correct_angle(normalized_angle(ray->angle));
+	set_ray_direction(ray);
+	ray->select_horizontal = TRUE;
+	horizontal_flag =
+	calc_horizontal_intersection(game->player->pos, ray, &(ray->collision_point));
+	calc_vertical_intersection(game->player->pos, ray, &vertical_intersection);
+	if ((!horizontal_flag ||
+	calc_distance_vector(game->player->pos, ray->collision_point) >= 
+	calc_distance_vector(game->player->pos ,vertical_intersection)))
+	{
+		ray->collision_point = vertical_intersection;
+		ray->select_horizontal = FALSE;
+	}
+}
+
+void	set_wall_pos(t_ray *ray, double wall_height, int x, t_wall *wall)
+{
+	double tmp;
+
+	wall->wall_height = round(wall_height);
+	wall->win_x = x;
+	wall->win_y = 0;
+	if (ray->select_horizontal == TRUE)
+		tmp = fmod(ray->collision_point.x, GRIDSIZE);
+	else
+		tmp = fmod(ray->collision_point.y, GRIDSIZE);
+	wall->offset_x = (tmp / 32);
+}
+
+void put_wall_texture(t_game *game, t_wall *wall, t_texture *texture)
+{
+	t_vector tex;
+	double offset;
+	int wall_y;
+	int color;
+
+	offset = (game->config.window_height / 2) - (wall->wall_height / 2);
+	tex.x = wall->offset_x * texture->width;
+	tex.y = 0;
+	wall_y = 0;
+	while(wall_y < wall->wall_height)
+	{
+		wall->win_y = offset + wall_y;
+		if (0 <= wall->win_y && wall->win_y <= game->config.window_height)
+		{
+			tex.y = (((double)wall_y / (double)wall->wall_height) * texture->height);
+			color = extract_color(texture, (int)tex.x, (int)tex.y);
+			my_mlx_pixel_put(game->data, wall->win_x, wall->win_y, color);
+		}
+		wall_y++;
+	}
+}
+
+
+void put_one_colmun(t_game *game, int i, double wall_height, t_ray *ray)
+{
+	t_wall wall;
+
+	set_wall_pos(ray, wall_height, i, &wall);
+	if(ray->vertical_direction == UP && ray->select_horizontal == TRUE)
+		put_wall_texture(game, &wall, &(game->config.south_texture));
+	else if(ray->vertical_direction == DOWN && ray->select_horizontal == TRUE)
+		put_wall_texture(game, &wall, &(game->config.north_texture));
+	else if(ray->horizontal_direction == LEFT && ray->select_horizontal == FALSE)
+		put_wall_texture(game, &wall, &(game->config.east_texture));
+	else
+		put_wall_texture(game, &wall, &(game->config.west_texture));
+}
+
+void	cast_all_ray(t_game *game)
 {
 	int count;
-	double angle;
 	t_vector collision_point;
+	t_ray ray;
+	double view_plane_distance;
+	double view_wall_height;
 
 	count = 0;
-	angle = game->player->rotationAngle - (g_fov / 2);
-	while(count < g_raycount)
+	ray.angle = game->player->rotationAngle - (game->fov / 2);
+	view_plane_distance = (WIDTH / 2) / normalized_angle(tan(game->fov/2));
+	while(count < game->ray_max)
 	{
-		//collision_point = cast_single_ray(*(game->player), angle, game);
-		//put_line(game->data, game->player->pos, collision_point, 0x000000FF);
-		rays[count] = cast_single_ray(*(game->player), angle, game);
-		angle += g_fov  / g_raycount;
+		cast_single_ray(game, &ray);
+		view_wall_height = (GRIDSIZE / (calc_distance_vector(game->player->pos, ray.collision_point) * cos(ray.angle - game->player->rotationAngle)) * view_plane_distance);
+		put_one_colmun(game, count, view_wall_height, &ray);
+		ray.angle += game->fov / game->ray_max;
 		count++;
 	}
 	
 }
 
-void put_3D_wall(t_game *game, t_vector *rays)
-{
-	double view_plane_distance;
-	double view_wall_height;
-	t_vector wall_top;
-	t_vector wall_bottom;
-
-	int i = 0;
-
-	view_plane_distance = (WIDTH / 2) / normalized_angle(tan(g_fov/2));
-	while(i < g_raycount)
-	{
-		//view_wall_height = (GRIDSIZE / calc_distance_vector(game->player->pos, rays[i]) * view_plane_distance);
-		view_wall_height = (GRIDSIZE / (calc_distance_vector(game->player->pos, rays[i]) * cos()) * view_plane_distance);
-		
-		wall_top.x = i;
-		wall_bottom.x = i;
-		wall_bottom.y = (HEIGHT/2) - (view_wall_height/2);
-		wall_top.y = (HEIGHT/2) + (view_wall_height/2);
-		if (!(calc_distance_vector(wall_bottom, wall_top) <= HEIGHT))
-		{
-			wall_top.y = 0;
-			wall_bottom.y = HEIGHT;
-		}
-		put_line(game->data, wall_bottom, wall_top, (int)0xFFFFFFFF);
-		i++;
-	}
-}
 
 int		deal_key(int key_code, t_game *game)
 {
@@ -525,7 +546,7 @@ int		deal_key(int key_code, t_game *game)
 		game->player->turnDirection = -1;
 	else if (key_code == KEY_RIGHT)
 		game->player->turnDirection = 1;
-	g_update = 1;
+	game->update = TRUE;
 	return (0);
 }
 
@@ -533,39 +554,42 @@ int	main_loop(t_game *game)
 {
 	t_vector centor;
 	t_vector end;
-	t_vector rays[g_raycount];
 	int i = 0;
 
-	if (g_update)
+	if (game->update)
 	{
 		update_player_pos(game->player);
-		img_fill(game->data, 0, 0);
-		cast_all_ray(game, rays);
-		put_3D_wall(game, rays);
-		put_minimap(game, rays);
+		put_background(game);
+		cast_all_ray(game);
+		put_minimap(game);
 		mlx_put_image_to_window(game->mlx, game->win, game->data->img, 0, 0);
 	}
 	game->player->verticalDirection = 0;
 	game->player->horizontalDirection = 0;
 	game->player->turnDirection = 0;
-	g_update = 0;
+	game->update = 0;
 	return (0);
 }
 
-int main()
+int main(int argc, char **argv)
 {
 	t_data data;
 	t_player player;
 	t_game game;
 
 	game.mlx = mlx_init();
+	game.map = malloc_map(MAX_MAP_SIZE, MAX_MAP_SIZE);
+	fprintf(stderr,"%d\n",set_configuration(&game, argv[1]));
+	game.config.window_width = WIDTH;
+	game.config.window_height = HEIGHT;
 	game.win = mlx_new_window(game.mlx, WIDTH, HEIGHT, "mlx");
 	data.img = mlx_new_image(game.mlx, WIDTH, HEIGHT);
 	data.addr = mlx_get_data_addr(data.img, &data.bits_per_pixel, &data.line_length, &data.endian);
+	game.fov = FOV * (PI / 180);
+	game.ray_max = game.config.window_width / COLUMUN_WIDTH;
 	game.data = &data;
-	init_player(&player, 50, 50);
+	init_player(&player, 200, 200);
 	game.player = &player;
-
 	mlx_hook(game.win, X_EVENT_KEY_PRESS, 1, &deal_key, &game);
 
 	mlx_loop_hook(game.mlx, &main_loop, &game);

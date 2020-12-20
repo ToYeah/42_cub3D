@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/16 03:40:39 by totaisei          #+#    #+#             */
-/*   Updated: 2020/12/19 15:26:15 by totaisei         ###   ########.fr       */
+/*   Updated: 2020/12/19 19:07:54 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,6 @@
 
 #define MAX_RESOLUTION_SIZE 100000
 #define MIN_RESOLUTION_SIZE 100
-#define MAX_MAP_SIZE 200
 #define FLOOR_CHAR '-'
 #define ITEM_CHAR '@'
 
@@ -482,25 +481,26 @@ t_bool set_configuration(t_game *game, char *path)
 	return TRUE;
 }
 
-int main(int argc, char **argv)
-{
-	t_data data;
-	t_game game;
-	int fd;
-
-	game.map = malloc_map(MAX_MAP_SIZE, MAX_MAP_SIZE);
-
-	game.mlx = mlx_init();
-	//game.win = mlx_new_window(game.mlx, 500, 500, "mlx");
-	//data.img = mlx_new_image(game.mlx, 500, 500);
-	//data.addr = mlx_get_data_addr(data.img, &data.bits_per_pixel, &data.line_length, &data.endian);
-	//game.data = &data;
-	//if(argc != 2)
-	//	return 1;//error
-	t_bool flag = set_configuration(&game, argv[1]);
-	if (!flag)
-		return 1;
-	
-	map_print(&game, 80);
-	mlx_loop(game.mlx);
-}
+//
+//nt main(int argc, char **argv)
+//
+//	t_data data;
+//	t_game game;
+//	int fd;
+//
+//	game.map = malloc_map(MAX_MAP_SIZE, MAX_MAP_SIZE);
+//
+//	game.mlx = mlx_init();
+//	//game.win = mlx_new_window(game.mlx, 500, 500, "mlx");
+//	//data.img = mlx_new_image(game.mlx, 500, 500);
+//	//data.addr = mlx_get_data_addr(data.img, &data.bits_per_pixel, &data.line_length, &data.endian);
+//	//game.data = &data;
+//	//if(argc != 2)
+//	//	return 1;//error
+//	t_bool flag = set_configuration(&game, argv[1]);
+//	if (!flag)
+//		return 1;
+//	
+//	map_print(&game, 80);
+//	mlx_loop(game.mlx);
+//

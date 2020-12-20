@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/16 02:33:18 by totaisei          #+#    #+#             */
-/*   Updated: 2020/12/19 13:40:58 by totaisei         ###   ########.fr       */
+/*   Updated: 2020/12/20 07:03:30 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,7 @@
 /////////////////////////////////////////////////
 
 #define DEF_ERR_MSG "Error"
+#define MAX_MAP_SIZE 200
 
 typedef struct	s_vector
 {
@@ -100,7 +101,14 @@ typedef struct	s_game
 	t_player *player;
 	t_config config;
 	char **map;
+	t_bool update;
+	double fov;
+	int ray_max;
 }				t_game;
 
+
+t_bool set_configuration(t_game *game, char *path);
+
+char **malloc_map(size_t x, size_t y);
 
 #endif
