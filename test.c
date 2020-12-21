@@ -4,7 +4,15 @@
 #include <errno.h>
 #include <string.h>
 
-int     main(void)
+
+
+
+int     main(int argc, char **argv)
 {
-    printf("%s",strerror(errno));
+	printf("\n%:vd", 1);
+	printf("\n%;vd", 1);
+	printf("\n%:qd", 1);
+	printf("\n%:kd", 1);
+	printf("\n%!vd", 1);
+	printf("\n%lvd", 1);
 }

@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/16 02:33:18 by totaisei          #+#    #+#             */
-/*   Updated: 2020/12/20 07:03:30 by totaisei         ###   ########.fr       */
+/*   Updated: 2020/12/21 08:58:31 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,9 @@
 
 #define DEF_ERR_MSG "Error"
 #define MAX_MAP_SIZE 200
+#define FLOOR_CHAR '-'
+#define ITEM_CHAR '@'
+#define WALL_CHAR '1'
 
 typedef struct	s_vector
 {
@@ -64,10 +67,12 @@ typedef struct	s_config
 	t_texture	east_texture;
 	t_texture	sprite_texture;
 	int			map_height;
+	int			map_width;
 	t_bool		map_flag;
 	int			start_x;
 	int			start_y;
 	int			item_count;
+	char		start_rotation;
 }				t_config;
 
 
@@ -110,5 +115,9 @@ typedef struct	s_game
 t_bool set_configuration(t_game *game, char *path);
 
 char **malloc_map(size_t x, size_t y);
+
+t_bool valid_runtime_arg(int argc, char **argv);
+
+t_bool put_err_msg(char *err_msg);
 
 #endif

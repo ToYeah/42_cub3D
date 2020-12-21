@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/16 03:40:39 by totaisei          #+#    #+#             */
-/*   Updated: 2020/12/19 19:07:54 by totaisei         ###   ########.fr       */
+/*   Updated: 2020/12/20 16:42:05 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,8 +14,6 @@
 
 #define MAX_RESOLUTION_SIZE 100000
 #define MIN_RESOLUTION_SIZE 100
-#define FLOOR_CHAR '-'
-#define ITEM_CHAR '@'
 
 typedef enum	e_identifier
 {
@@ -62,6 +60,7 @@ void init_config(t_config *conf)
 	conf->start_x = 0;
 	conf->start_y = 0;
 	conf->item_count = 0;
+	conf->map_width = 0;
 
 }
 
@@ -300,7 +299,7 @@ t_status valid_map(t_game *game, t_ident_line input)
 
 	i = 0;
 	game->config.map_flag = TRUE;//NANKAI MO YOBARERU NO IYA YAWA
-	if (input.status == FAILURE || ft_strlen(input.line) > MAX_MAP_SIZE)
+	if (*input.status == FAILURE || ft_strlen(input.line) > MAX_MAP_SIZE)
 		return FAILURE;
 	while (input.line[i])
 	{
@@ -311,11 +310,14 @@ t_status valid_map(t_game *game, t_ident_line input)
 				return FAILURE;
 			game->config.start_x = i;
 			game->config.start_y = game->config.map_height;
+			game->config.start_rotation = input.line[i];
 		}
 		if (input.line[i] == '2')
 			game->config.item_count++;
 		i++;
 	}
+	if (game->config.map_width < i)
+		game->config.map_width = i;
 	game->config.map_height++;
 	return ENTERED;
 }
@@ -457,14 +459,14 @@ char **malloc_map(size_t x, size_t y)
 	return result;
 }
 
-void map_print(t_game *game, int width)
+void map_print(t_game *game)
 {
 	int i;
 
 	i = 0;
 	while(i < game->config.map_height)
 	{
-		fprintf(stderr, "%.*s\n", width,game->map[i]);
+		fprintf(stderr, "%.*s\n", game->config.map_width,game->map[i]);
 		i++;
 	}
 }
@@ -476,31 +478,23 @@ t_bool set_configuration(t_game *game, char *path)
 		return put_err_msg(strerror(errno));
 	if (!valid_cub(game, fd))
 		return FALSE;
+	if (game->config.start_x == 0 && game->config.start_y == 0)
+		return put_err_msg("No starting point.");
 	if (!cub_flood_fill(game->map, game->config.start_x, game->config.start_y))
 		return put_err_msg("Unclosed map.");
+	//map_print(game);
 	return TRUE;
 }
 
-//
-//nt main(int argc, char **argv)
-//
-//	t_data data;
-//	t_game game;
-//	int fd;
-//
-//	game.map = malloc_map(MAX_MAP_SIZE, MAX_MAP_SIZE);
-//
-//	game.mlx = mlx_init();
-//	//game.win = mlx_new_window(game.mlx, 500, 500, "mlx");
-//	//data.img = mlx_new_image(game.mlx, 500, 500);
-//	//data.addr = mlx_get_data_addr(data.img, &data.bits_per_pixel, &data.line_length, &data.endian);
-//	//game.data = &data;
-//	//if(argc != 2)
-//	//	return 1;//error
-//	t_bool flag = set_configuration(&game, argv[1]);
-//	if (!flag)
-//		return 1;
-//	
-//	map_print(&game, 80);
-//	mlx_loop(game.mlx);
-//
+t_bool valid_runtime_arg(int argc, char **argv)
+{
+	if (argc == 1)
+		return put_err_msg("too few arguments to cub3D.");
+	if (argc > 3)
+		return put_err_msg("Too many arguments for cub3D");
+	if (argc > 1 && ft_strrncmp(argv[1], ".cub", 4))
+		return put_err_msg("The second argument is incorrect");
+	if (argc == 3 && ft_strncmp(argv[2], "--save", 7))
+		return put_err_msg("The third argument is incorrect");
+	return TRUE;
+}
