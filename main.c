@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/08 06:26:02 by totaisei          #+#    #+#             */
-/*   Updated: 2020/12/21 08:59:20 by totaisei         ###   ########.fr       */
+/*   Updated: 2020/12/21 10:35:07 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -159,9 +159,9 @@ void	put_map(t_game *game,char **map)
 		while(x < game->config.map_width)
 		{
 			if (map[y][x] == WALL_CHAR)
-				put_square(game->data, x, y, TRUE);
+				put_square(&(game->data), x, y, TRUE);
 			else if (map[y][x] == FLOOR_CHAR)
-				put_square(game->data, x, y, FALSE);
+				put_square(&(game->data), x, y, FALSE);
 			x++;
 		}
 		y++;
@@ -179,7 +179,7 @@ void	put_background(t_game *game)
 		j = 0;
 		while(j < game->config.window_width)
 		{
-			my_mlx_pixel_put(game->data, j, i, game->config.ceiling_color);
+			my_mlx_pixel_put(&(game->data), j, i, game->config.ceiling_color);
 			j++;
 		}
 		i++;
@@ -189,7 +189,7 @@ void	put_background(t_game *game)
 		j = 0;
 		while(j < game->config.window_width)
 		{
-			my_mlx_pixel_put(game->data, j, i, game->config.floor_color);
+			my_mlx_pixel_put(&(game->data), j, i, game->config.floor_color);
 			j++;
 		}
 		i++;
@@ -294,7 +294,7 @@ void put_minimap(t_game *game)
 		//put_line(game->data, mini_player, mini_ray, 0x00FF0000);
 		i++;
 	}
-	put_player(game->data, game->player->pos);
+	put_player(&(game->data), game->player->pos);
 }
 
 int validate_collision(t_game *game, t_vector pos)// char **map;
@@ -475,7 +475,7 @@ void put_wall_texture(t_game *game, t_wall *wall, t_texture *texture)
 		{
 			tex.y = (((double)wall_y / (double)wall->wall_height) * texture->height);
 			color = extract_color(texture, (int)tex.x, (int)tex.y);
-			my_mlx_pixel_put(game->data, wall->win_x, wall->win_y, color);
+			my_mlx_pixel_put(&(game->data), wall->win_x, wall->win_y, color);
 		}
 		wall_y++;
 	}
@@ -550,7 +550,7 @@ int	main_loop(t_game *game)
 		put_background(game);
 		cast_all_ray(game);
 		put_minimap(game);
-		mlx_put_image_to_window(game->mlx, game->win, game->data->img, 0, 0);
+		mlx_put_image_to_window(game->mlx, game->win, game->data.img, 0, 0);
 	}
 	game->player->verticalDirection = 0;
 	game->player->horizontalDirection = 0;
@@ -598,8 +598,8 @@ t_bool init_game(t_game **game)
 t_bool all_free_cub(t_game *game)
 {
 	map_free(game->map);
-	mlx_destroy_image(game->mlx, game->data->img);
-	mlx_destroy_window(game->mlx, game->win);
+	//mlx_destroy_image(game->mlx, game->data->img);
+	//mlx_destroy_window(game->mlx, game->win);
 	mlx_destroy_display(game->mlx);
 	free(game->mlx);
 	free(game);
@@ -609,7 +609,6 @@ t_bool all_free_cub(t_game *game)
 
 int main(int argc, char **argv)
 {
-	t_data data;
 	t_player player;
 	t_game *game;
 	t_game a;
@@ -621,11 +620,10 @@ int main(int argc, char **argv)
 	if (!set_configuration(game, argv[1]))
 		return 0;
 	game->win = mlx_new_window(game->mlx, game->config.window_width, game->config.window_height, "mlx");
-	data.img = mlx_new_image(game->mlx, game->config.window_width, game->config.window_height);
-	data.addr = mlx_get_data_addr(data.img, &data.bits_per_pixel, &data.line_length, &data.endian);
+	game->data.img = mlx_new_image(game->mlx, game->config.window_width, game->config.window_height);
+	game->data.addr = mlx_get_data_addr(game->data.img, &(game->data.bits_per_pixel), &(game->data.line_length), &(game->data.endian));
 	game->fov = FOV * (PI / 180);
 	game->ray_max = game->config.window_width / COLUMUN_WIDTH;
-	game->data = &data;
 	init_player(&player, &(game->config));
 	game->player = &player;
 

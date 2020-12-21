@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/16 02:33:18 by totaisei          #+#    #+#             */
-/*   Updated: 2020/12/21 08:58:31 by totaisei         ###   ########.fr       */
+/*   Updated: 2020/12/21 10:29:19 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -102,7 +102,7 @@ typedef struct	s_game
 {
 	void	*mlx;
 	void	*win;
-	t_data	*data;
+	t_data	data;
 	t_player *player;
 	t_config config;
 	char **map;
