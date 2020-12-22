@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/16 02:33:18 by totaisei          #+#    #+#             */
-/*   Updated: 2020/12/21 10:29:19 by totaisei         ###   ########.fr       */
+/*   Updated: 2020/12/21 15:54:02 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,9 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
+#include <sysexits.h>
+
+#include "debug.h"
 
 #include "my_libft/libft.h"
 
@@ -103,7 +106,7 @@ typedef struct	s_game
 	void	*mlx;
 	void	*win;
 	t_data	data;
-	t_player *player;
+	t_player player;
 	t_config config;
 	char **map;
 	t_bool update;
