@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/16 03:40:39 by totaisei          #+#    #+#             */
-/*   Updated: 2020/12/20 16:42:05 by totaisei         ###   ########.fr       */
+/*   Updated: 2020/12/28 10:34:47 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,7 +59,7 @@ void init_config(t_config *conf)
 	conf->map_height = 0;
 	conf->start_x = 0;
 	conf->start_y = 0;
-	conf->item_count = 0;
+	conf->sprite_count = 0;
 	conf->map_width = 0;
 
 }
@@ -313,7 +313,7 @@ t_status valid_map(t_game *game, t_ident_line input)
 			game->config.start_rotation = input.line[i];
 		}
 		if (input.line[i] == '2')
-			game->config.item_count++;
+			game->config.sprite_count++;
 		i++;
 	}
 	if (game->config.map_width < i)
@@ -469,6 +469,35 @@ void map_print(t_game *game)
 		fprintf(stderr, "%.*s\n", game->config.map_width,game->map[i]);
 		i++;
 	}
+}
+
+t_vector *malloc_sprite_ary(t_game *game)
+{
+	int index_x;
+	int index_y;
+	int ary_index;
+	t_vector *result;
+
+	index_y = 0;
+	ary_index = 0;
+	if(!(result = malloc(sizeof(t_vector) * game->config.sprite_count)))
+		return NULL;
+	while(index_y < game->config.map_height)
+	{
+		index_x = 0;
+		while(index_x < game->config.map_width)
+		{
+			if(game->map[index_y][index_x] == ITEM_CHAR)
+			{
+				result[ary_index] = vector_constructor
+				(index_x * GRIDSIZE + GRIDSIZE / 2,index_y * GRIDSIZE + GRIDSIZE / 2);
+				ary_index++;
+			}
+			index_x++;
+		}
+		index_y++;
+	}
+	return result;
 }
 
 t_bool set_configuration(t_game *game, char *path)

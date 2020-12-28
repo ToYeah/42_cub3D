@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/08 06:26:02 by totaisei          #+#    #+#             */
-/*   Updated: 2020/12/21 18:09:05 by totaisei         ###   ########.fr       */
+/*   Updated: 2020/12/28 17:35:49 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,6 @@
 #define RIGHT 1
 
 #define COLUMUN_WIDTH 1;
-#define GRIDSIZE 32
 #define MINI_MAP_SCALE 0.5
 
 #define FOV				60
@@ -140,6 +139,8 @@ void	put_square(t_data *data, int x, int y, int fill)
 		{
 			if (index_x == 1 || index_x == map_size || index_y == 1 || index_y == map_size || fill)
 				my_mlx_pixel_put(data, index_x + pos_x, index_y + pos_y, 0x00000000);
+			else
+				my_mlx_pixel_put(data, index_x + pos_x, index_y + pos_y, 0x00FFFFFF);
 			index_x--;
 		}
 		index_y--;
@@ -159,7 +160,7 @@ void	put_map(t_game *game,char **map)
 		{
 			if (map[y][x] == WALL_CHAR)
 				put_square(&(game->data), x, y, TRUE);
-			else if (map[y][x] == FLOOR_CHAR)
+			else if (map[y][x] != ' ')
 				put_square(&(game->data), x, y, FALSE);
 			x++;
 		}
@@ -255,7 +256,7 @@ void put_line(t_data *data, t_vector start, t_vector end ,int color)
 	}
 }
 
-void put_player(t_data *data, t_vector player_pos)
+void put_dot(t_data *data, t_vector player_pos, int color)
 {
 	int i;
 	int j;
@@ -268,32 +269,55 @@ void put_player(t_data *data, t_vector player_pos)
 		j = 0;
 		while(j < 10)
 		{
-			my_mlx_pixel_put(data, (player_pos.x + j) * MINI_MAP_SCALE, (player_pos.y + i) * MINI_MAP_SCALE, 0x00FF0000);
+			my_mlx_pixel_put(data, (player_pos.x + j) * MINI_MAP_SCALE, (player_pos.y + i) * MINI_MAP_SCALE, color);
 			j++;
 		}
 		i++;
 	}
 }
 
+double	correct_angle(double angle)
+{
+	if(3.1415 < angle && angle < 3.1416)
+		angle = 3.14;
+	if(-0.0001 < angle && angle < 0.0001)
+		angle = 0.001;
+	return angle;
+}
+
+void put_miniray(t_game *game, double angle, double length, int color)
+{
+	t_vector end_point;
+	end_point = vector_constructor(
+	game->player.pos.x * MINI_MAP_SCALE + length * cos(angle),
+	game->player.pos.y * MINI_MAP_SCALE + length * sin(angle));
+	put_line(&(game->data), 
+	vector_constructor(game->player.pos.x * MINI_MAP_SCALE,
+	game->player.pos.y * MINI_MAP_SCALE),
+	end_point, color);
+}
+
 void put_minimap(t_game *game)
 {
 	int i = 0;
-	t_vector mini_player;
-	t_vector mini_ray;
-
+	t_vector player_direction;
 	put_map(game, game->map);
-	while(i < game->ray_max)
+
+	
+	put_dot(&(game->data), game->player.pos, 0x00FF0000);
+	put_miniray(game, game->player.rotationAngle, 30, 0x00FF0000);
+	put_miniray(game, normalized_angle(game->player.rotationAngle - (game->fov / 2)),
+	30, 0x00FF0000);
+	put_miniray(game, normalized_angle(game->player.rotationAngle + (game->fov / 2)),
+	30, 0x00FF0000);
+
+	i = 0;
+	while (i < game->config.sprite_count)
 	{
-		mini_player = game->player.pos;
-		mini_player.x *= MINI_MAP_SCALE;
-		mini_player.y *= MINI_MAP_SCALE;
-		//mini_ray = rays[i];
-		//mini_ray.x *= MINI_MAP_SCALE;
-		//mini_ray.y *= MINI_MAP_SCALE;
-		//put_line(game->data, mini_player, mini_ray, 0x00FF0000);
+		//put_dot(&(game->data), game->sprite_pos[i], 0x000000FF);
 		i++;
 	}
-	put_player(&(game->data), game->player.pos);
+	
 }
 
 int validate_collision(t_game *game, t_vector pos)// char **map;
@@ -403,15 +427,6 @@ t_bool	calc_vertical_intersection(t_game *game, t_vector player_pos, t_ray *ray,
 	return FALSE;
 }
 
-double	correct_angle(double angle)
-{
-	if(3.1415 < angle && angle < 3.1416)
-		angle = 3.14;
-	if(-0.0001 < angle && angle < 0.0001)
-		angle = 0.001;
-	return angle;
-}
-
 void	set_ray_direction(t_ray *ray)
 {
 	ray->vertical_direction = UP;
@@ -458,7 +473,6 @@ void	set_wall_pos(t_ray *ray, double wall_height, int x, t_wall *wall)
 
 void put_wall_texture(t_game *game, t_wall *wall, t_texture *texture)
 {
-	static int count;
 	t_vector tex;
 	double offset;
 	int wall_y;
@@ -473,7 +487,6 @@ void put_wall_texture(t_game *game, t_wall *wall, t_texture *texture)
 	{
 		if (0 <= wall->win_y && wall->win_y <= game->config.window_height)
 		{
-			count++;
 			tex.y = (((double)wall_y / (double)wall->wall_height) * texture->height);
 			color = extract_color(texture, (int)tex.x, (int)tex.y);
 			my_mlx_pixel_put(&(game->data), wall->win_x, wall->win_y, color);
@@ -481,7 +494,6 @@ void put_wall_texture(t_game *game, t_wall *wall, t_texture *texture)
 		wall_y++;
 		wall->win_y = offset + wall_y;
 	}
-	DI(count);
 }
 
 void put_one_colmun(t_game *game, int i, double wall_height, t_ray *ray)
@@ -513,12 +525,75 @@ void	cast_all_ray(t_game *game)
 	while(count < game->ray_max)
 	{
 		cast_single_ray(game, &ray);
-		view_wall_height = (GRIDSIZE / (calc_distance_vector(game->player.pos, ray.collision_point) * cos(ray.angle - game->player.rotationAngle)) * view_plane_distance);
+		view_wall_height = (GRIDSIZE / (calc_distance_vector(game->player.pos, ray.collision_point) *
+		cos(ray.angle - game->player.rotationAngle)) * view_plane_distance);
+		
+		//put_miniray(game, ray.angle, calc_distance_vector(game->player.pos, ray.collision_point) * MINI_MAP_SCALE,
+		//0x00FF0000);
+		
 		put_one_colmun(game, count, view_wall_height, &ray);
 		ray.angle += game->fov / game->ray_max;
 		count++;
 	}
 	
+}
+
+double	calc_sprite_theta(t_vector *player_pos, t_vector *sprite_pos)
+{
+	t_vector diff;
+	double result;
+
+	diff.x = player_pos->x - sprite_pos->x;
+	diff.y = player_pos->y - sprite_pos->y;
+
+	result = atan2(diff.y , diff.x) + PI;
+	return result;
+}
+
+t_bool	is_in_sight_sprite(t_game *game, double angle, double width)
+{
+	double l_limit;
+	double r_limit;
+	double sprite_left;
+	double sprite_right;
+
+	l_limit = normalized_angle(game->player.rotationAngle - (game->fov / 2));
+	r_limit = l_limit + game->fov;
+	sprite_left = angle + width;
+	sprite_right = angle - width;
+	if(l_limit <= sprite_right && sprite_right <= r_limit)
+		return TRUE;
+	if(l_limit <= sprite_left && sprite_left <= r_limit)
+		return TRUE;
+	return FALSE;
+}
+
+void	put_sprites(t_game *game)
+{
+	int i;
+	double sprite_angle;
+	double angle_width;
+
+	i = 0;
+	while(i < game->config.sprite_count)
+	{
+		sprite_angle = calc_sprite_theta(&(game->player.pos), &(game->sprite_pos[i]));
+		angle_width = normalized_angle(atan2(GRIDSIZE / 2 ,
+		calc_distance_vector(game->player.pos, game->sprite_pos[i])));
+
+		fprintf(stderr, "ply:%lf\n", game->player.rotationAngle);
+		if(is_in_sight_sprite(game, sprite_angle, angle_width))
+		{
+			put_dot(&(game->data), game->sprite_pos[i], 0x000000FF);
+		//put_miniray(game, normalized_angle(sprite_angle + angle_width),
+		//calc_distance_vector(game->player.pos, game->sprite_pos[i]) * MINI_MAP_SCALE
+		//, 0x000000FF);
+		//put_miniray(game, normalized_angle(sprite_angle - angle_width),
+		//calc_distance_vector(game->player.pos, game->sprite_pos[i]) * MINI_MAP_SCALE
+		//, 0x000000FF);
+		}
+		i++;
+	}
 }
 
 int		deal_key(int key_code, t_game *game)
@@ -553,6 +628,7 @@ int	main_loop(t_game *game)
 		put_background(game);
 		cast_all_ray(game);
 		put_minimap(game);
+		put_sprites(game);
 		mlx_put_image_to_window(game->mlx, game->win, game->data.img, 0, 0);
 	}
 	game->player.verticalDirection = 0;
@@ -638,9 +714,10 @@ int free_all_cub(t_game *game)
 
 t_bool load_configuration(t_game *game)
 {
-	game->win = mlx_new_window(game->mlx, game->config.window_width, game->config.window_height, "mlx");
-	game->data.img = mlx_new_image(game->mlx, game->config.window_width, game->config.window_height);
-	
+	game->win = mlx_new_window(game->mlx, game->config.window_width, game->config.window_height, "mlx");// error
+	game->data.img = mlx_new_image(game->mlx, game->config.window_width, game->config.window_height);// error
+	game->sprite_pos = malloc_sprite_ary(game);
+
 	
 	game->data.addr = mlx_get_data_addr(game->data.img, &(game->data.bits_per_pixel), &(game->data.line_length), &(game->data.endian));
 	game->fov = FOV * (PI / 180);

@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/16 02:33:18 by totaisei          #+#    #+#             */
-/*   Updated: 2020/12/21 15:54:02 by totaisei         ###   ########.fr       */
+/*   Updated: 2020/12/28 10:17:30 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,8 +27,6 @@
 #include <string.h>
 #include <sysexits.h>
 
-#include "debug.h"
-
 #include "my_libft/libft.h"
 
 /////////////////////////////////////////////////
@@ -40,6 +38,7 @@
 #define FLOOR_CHAR '-'
 #define ITEM_CHAR '@'
 #define WALL_CHAR '1'
+#define GRIDSIZE 32
 
 typedef struct	s_vector
 {
@@ -74,7 +73,7 @@ typedef struct	s_config
 	t_bool		map_flag;
 	int			start_x;
 	int			start_y;
-	int			item_count;
+	int			sprite_count;
 	char		start_rotation;
 }				t_config;
 
@@ -101,6 +100,8 @@ typedef struct	s_player
 }				t_player;
 
 
+
+
 typedef struct	s_game
 {
 	void	*mlx;
@@ -112,6 +113,7 @@ typedef struct	s_game
 	t_bool update;
 	double fov;
 	int ray_max;
+	t_vector *sprite_pos;
 }				t_game;
 
 
@@ -122,5 +124,9 @@ char **malloc_map(size_t x, size_t y);
 t_bool valid_runtime_arg(int argc, char **argv);
 
 t_bool put_err_msg(char *err_msg);
+
+t_vector vector_constructor(double x, double y);
+
+t_vector *malloc_sprite_ary(t_game *game);
 
 #endif
