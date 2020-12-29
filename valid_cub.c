@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/16 03:40:39 by totaisei          #+#    #+#             */
-/*   Updated: 2020/12/28 10:34:47 by totaisei         ###   ########.fr       */
+/*   Updated: 2020/12/29 15:45:38 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -367,7 +367,7 @@ char *select_conf_err_msg(int ident)
 	else if (ident == (int)WEST)
 		return "Invalid West texture.";
 	else if (ident == (int)EAST)
-		return "Invalid Easr texture.";
+		return "Invalid East texture.";
 	else if (ident == (int)SPRITE)
 		return "Invalid Sprite texture.";
 	else if (ident == (int)FLOOR)
@@ -497,6 +497,15 @@ t_vector *malloc_sprite_ary(t_game *game)
 		}
 		index_y++;
 	}
+	return result;
+}
+
+t_collision *malloc_collisions(t_game *game)
+{
+	t_collision *result;
+
+	if(!(result = malloc(sizeof(t_collision) * game->config.window_width)))
+		return (NULL);
 	return result;
 }
 

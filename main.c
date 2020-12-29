@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/08 06:26:02 by totaisei          #+#    #+#             */
-/*   Updated: 2020/12/28 17:35:49 by totaisei         ###   ########.fr       */
+/*   Updated: 2020/12/29 16:14:39 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,6 +41,7 @@
 
 #define X_EVENT_KEY_PRESS		2
 #define X_EVENT_KEY_EXIT		17
+#define X_EVENT_KEY_RELEASE		3
 
 typedef struct	s_ray
 {
@@ -103,8 +104,6 @@ void	init_player(t_player *player, t_config *conf)
 	player->verticalDirection = 0;
 	player->horizontalDirection = 0;
 	player->rotationAngle = select_start_angle(conf->start_rotation);
-	player->moveSpeed = 10;
-	player->rotationSpeed = 5 * (PI / 180);
 }
 
 void	my_mlx_pixel_put(t_data *data, int x, int y, int color)
@@ -297,27 +296,50 @@ void put_miniray(t_game *game, double angle, double length, int color)
 	end_point, color);
 }
 
+void put_minisprite(t_game *game)
+{
+	int i;
+	double sprite_angle;
+	double angle_width;
+	double distance;
+
+	i = 0;
+	while(i < game->config.sprite_count)
+	{
+		sprite_angle = calc_sprite_theta(&(game->player.pos), &(game->sprite_pos[i]));
+		distance = calc_distance_vector(game->player.pos, game->sprite_pos[i]);
+		angle_width = normalized_angle(atan2(GRIDSIZE / 2, distance));
+		put_line(&(game->data), vector_constructor(
+		game->player.pos.x * MINI_MAP_SCALE + distance * cos(sprite_angle + angle_width) * MINI_MAP_SCALE, 
+		game->player.pos.y * MINI_MAP_SCALE + distance * sin(sprite_angle + angle_width) * MINI_MAP_SCALE),
+		vector_constructor(
+		game->player.pos.x * MINI_MAP_SCALE + distance * cos(sprite_angle - angle_width) * MINI_MAP_SCALE, 
+		game->player.pos.y * MINI_MAP_SCALE + distance * sin(sprite_angle - angle_width) * MINI_MAP_SCALE),
+		0x000000FF);
+		i++;
+	}
+}
+
 void put_minimap(t_game *game)
 {
-	int i = 0;
+	int i;
+	double angle;
 	t_vector player_direction;
 	put_map(game, game->map);
 
-	
-	put_dot(&(game->data), game->player.pos, 0x00FF0000);
-	put_miniray(game, game->player.rotationAngle, 30, 0x00FF0000);
-	put_miniray(game, normalized_angle(game->player.rotationAngle - (game->fov / 2)),
-	30, 0x00FF0000);
-	put_miniray(game, normalized_angle(game->player.rotationAngle + (game->fov / 2)),
-	30, 0x00FF0000);
-
+	angle = normalized_angle(game->player.rotationAngle - (game->fov / 2));
 	i = 0;
-	while (i < game->config.sprite_count)
+	while (i < game->ray_max)
 	{
-		//put_dot(&(game->data), game->sprite_pos[i], 0x000000FF);
+		put_miniray(game, angle,
+		game->collisions[i].length * MINI_MAP_SCALE, 0x00FF0000);
+		angle += game->fov / game->ray_max;;
 		i++;
 	}
-	
+
+	put_dot(&(game->data), game->player.pos, 0x00000000);
+	put_miniray(game, game->player.rotationAngle, 30, 0x00000000);
+	put_minisprite(game);
 }
 
 int validate_collision(t_game *game, t_vector pos)// char **map;
@@ -345,14 +367,14 @@ void 	update_player_pos(t_game *game, t_player *player)
 {
 	t_vector new_pos;
 
-	player->rotationAngle += player->rotationSpeed * player->turnDirection;
+	player->rotationAngle += ROTATE_SPEED * (player->turnDirection);
 	player->rotationAngle = normalized_angle(player->rotationAngle);
 	new_pos.x = player->pos.x;
 	new_pos.y = player->pos.y;
-	new_pos.x += cos(player->rotationAngle) * player->verticalDirection * player->moveSpeed;
-	new_pos.y += sin(player->rotationAngle) * player->verticalDirection * player->moveSpeed;
-	new_pos.x += (cos(player->rotationAngle + PI/2)) * player->horizontalDirection * player->moveSpeed;
-	new_pos.y += (sin(player->rotationAngle + PI/2)) * player->horizontalDirection * player->moveSpeed;
+	new_pos.x += cos(player->rotationAngle) * player->verticalDirection * MOVE_SPEED;
+	new_pos.y += sin(player->rotationAngle) * player->verticalDirection * MOVE_SPEED;
+	new_pos.x += (cos(player->rotationAngle + PI/2)) * player->horizontalDirection * MOVE_SPEED;
+	new_pos.y += (sin(player->rotationAngle + PI/2)) * player->horizontalDirection * MOVE_SPEED;
 	if(validate_collision(game, new_pos))
 		player->pos = new_pos;
 }
@@ -496,7 +518,7 @@ void put_wall_texture(t_game *game, t_wall *wall, t_texture *texture)
 	}
 }
 
-void put_one_colmun(t_game *game, int i, double wall_height, t_ray *ray)
+void put_one_colmun(t_game *game, int i, t_ray *ray, double wall_height)
 {
 	t_wall wall;
 
@@ -511,27 +533,28 @@ void put_one_colmun(t_game *game, int i, double wall_height, t_ray *ray)
 		put_wall_texture(game, &wall, &(game->config.west_texture));
 }
 
+double calc_view_wall_height(t_game *game, t_vector collision, double angle)
+{
+	return (GRIDSIZE / (calc_distance_vector(game->player.pos, collision) *
+		cos(angle - game->player.rotationAngle)) * game->view_plane_distance);
+}
+
 void	cast_all_ray(t_game *game)
 {
 	int count;
 	t_vector collision_point;
 	t_ray ray;
-	double view_plane_distance;
-	double view_wall_height;
 
 	count = 0;
 	ray.angle = game->player.rotationAngle - (game->fov / 2);
-	view_plane_distance = (game->config.window_width / 2) / normalized_angle(tan(game->fov/2));
 	while(count < game->ray_max)
 	{
 		cast_single_ray(game, &ray);
-		view_wall_height = (GRIDSIZE / (calc_distance_vector(game->player.pos, ray.collision_point) *
-		cos(ray.angle - game->player.rotationAngle)) * view_plane_distance);
-		
-		//put_miniray(game, ray.angle, calc_distance_vector(game->player.pos, ray.collision_point) * MINI_MAP_SCALE,
-		//0x00FF0000);
-		
-		put_one_colmun(game, count, view_wall_height, &ray);
+		game->collisions[count].length = calc_distance_vector(game->player.pos, ray.collision_point);
+		game->collisions[count].view_length = game->collisions[count].length * cos(ray.angle - game->player.rotationAngle);
+		put_one_colmun(game, count, &ray, calc_view_wall_height(
+			game, ray.collision_point, ray.angle
+		));
 		ray.angle += game->fov / game->ray_max;
 		count++;
 	}
@@ -550,22 +573,68 @@ double	calc_sprite_theta(t_vector *player_pos, t_vector *sprite_pos)
 	return result;
 }
 
-t_bool	is_in_sight_sprite(t_game *game, double angle, double width)
+double	calc_angle_diff(t_game *game, double angle, t_bool minus)
 {
-	double l_limit;
-	double r_limit;
-	double sprite_left;
-	double sprite_right;
+	double raise;
+	double start;
 
-	l_limit = normalized_angle(game->player.rotationAngle - (game->fov / 2));
-	r_limit = l_limit + game->fov;
-	sprite_left = angle + width;
-	sprite_right = angle - width;
-	if(l_limit <= sprite_right && sprite_right <= r_limit)
-		return TRUE;
-	if(l_limit <= sprite_left && sprite_left <= r_limit)
-		return TRUE;
-	return FALSE;
+	start = normalized_angle(game->player.rotationAngle - (game->fov / 2));
+	raise = 2 * PI - start;
+	if(angle >= start)
+		angle = angle - start;
+	else
+		angle = angle + raise;
+	if(minus && angle > PI)
+		angle = angle - (2 * PI);
+	return angle;
+}
+
+void	draw_sprtite(t_game *game, t_vector win_pos, int vwh, double length)
+{
+	int i;
+	int j;
+	int color;
+
+	i = 0;
+	while(i < vwh)
+	{
+		j = 0;
+		while(j < vwh)
+		{
+			if(0 <= (win_pos.x + j) && (win_pos.x + j) < game->config.window_width
+			&& 0 <= (win_pos.y + i) && (win_pos.y + i) < game->config.window_height
+			&& game->collisions[(int)round(win_pos.x + j)].view_length > length)
+			{
+				color = extract_color(&(game->config.sprite_texture),
+				(double)j / vwh * game->config.sprite_texture.width,
+				(double)i / vwh * game->config.sprite_texture.height);
+				if(color != 0)
+					my_mlx_pixel_put(&(game->data), (win_pos.x + j), (win_pos.y + i), color);
+			}
+			j++;
+		}
+		i++;
+	}
+}
+
+void	put_one_sprite(t_game *game, t_vector sprite_pos, double angle, double distance)
+{
+	double ratio;
+	int vwh;
+	int color;
+	double sprite_view_length;
+
+	t_vector win_pos;
+
+	ratio = calc_angle_diff(game, angle, TRUE) / game->fov;
+	if(ratio > 2)
+		ratio -= 2 * PI;
+
+	vwh = (int)round(calc_view_wall_height(game, sprite_pos, angle));
+	win_pos = vector_constructor
+	((ratio * game->config.window_width) - vwh / 2,game->config.window_height/2 - vwh/2);
+	sprite_view_length = distance * cos(angle - game->player.rotationAngle);
+	draw_sprtite(game, win_pos, vwh, sprite_view_length);
 }
 
 void	put_sprites(t_game *game)
@@ -573,30 +642,24 @@ void	put_sprites(t_game *game)
 	int i;
 	double sprite_angle;
 	double angle_width;
+	double distance;
 
 	i = 0;
 	while(i < game->config.sprite_count)
 	{
+		distance = calc_distance_vector(game->player.pos, game->sprite_pos[i]);
 		sprite_angle = calc_sprite_theta(&(game->player.pos), &(game->sprite_pos[i]));
-		angle_width = normalized_angle(atan2(GRIDSIZE / 2 ,
-		calc_distance_vector(game->player.pos, game->sprite_pos[i])));
+		angle_width = normalized_angle(atan2(GRIDSIZE / 2 , distance));
 
-		fprintf(stderr, "ply:%lf\n", game->player.rotationAngle);
-		if(is_in_sight_sprite(game, sprite_angle, angle_width))
-		{
-			put_dot(&(game->data), game->sprite_pos[i], 0x000000FF);
-		//put_miniray(game, normalized_angle(sprite_angle + angle_width),
-		//calc_distance_vector(game->player.pos, game->sprite_pos[i]) * MINI_MAP_SCALE
-		//, 0x000000FF);
-		//put_miniray(game, normalized_angle(sprite_angle - angle_width),
-		//calc_distance_vector(game->player.pos, game->sprite_pos[i]) * MINI_MAP_SCALE
-		//, 0x000000FF);
-		}
+		if(calc_angle_diff(game, normalized_angle(sprite_angle), FALSE) <= game->fov ||
+		calc_angle_diff(game, normalized_angle(sprite_angle + angle_width), FALSE) <= game->fov ||
+		calc_angle_diff(game, normalized_angle(sprite_angle - angle_width), FALSE) <= game->fov)
+			put_one_sprite(game, game->sprite_pos[i], sprite_angle, distance);
 		i++;
 	}
 }
 
-int		deal_key(int key_code, t_game *game)
+int		press_key(int key_code, t_game *game)
 {
 	if (key_code == KEY_ESC)
 		exit(0);
@@ -612,7 +675,25 @@ int		deal_key(int key_code, t_game *game)
 		game->player.turnDirection = -1;
 	else if (key_code == KEY_RIGHT)
 		game->player.turnDirection = 1;
-	game->update = TRUE;
+	return (0);
+}
+
+int		release_key(int key_code, t_game *game)
+{
+	if (key_code == KEY_ESC)
+		exit(0);
+	else if (key_code == KEY_W)
+		game->player.verticalDirection = 0;
+	else if (key_code == KEY_S)
+		game->player.verticalDirection = 0;
+	else if (key_code == KEY_D)
+		game->player.horizontalDirection = 0;
+	else if (key_code == KEY_A)
+		game->player.horizontalDirection = 0;
+	else if (key_code == KEY_LEFT)
+		game->player.turnDirection = 0;
+	else if (key_code == KEY_RIGHT)
+		game->player.turnDirection = 0;
 	return (0);
 }
 
@@ -620,21 +701,13 @@ int	main_loop(t_game *game)
 {
 	t_vector centor;
 	t_vector end;
-	int i = 0;
 
-	if (game->update)
-	{
-		update_player_pos(game, &(game->player));
-		put_background(game);
-		cast_all_ray(game);
-		put_minimap(game);
-		put_sprites(game);
-		mlx_put_image_to_window(game->mlx, game->win, game->data.img, 0, 0);
-	}
-	game->player.verticalDirection = 0;
-	game->player.horizontalDirection = 0;
-	game->player.turnDirection = 0;
-	game->update = 0;
+	update_player_pos(game, &(game->player));
+	put_background(game);
+	cast_all_ray(game);
+	put_minimap(game);
+	put_sprites(game);
+	mlx_put_image_to_window(game->mlx, game->win, game->data.img, 0, 0);
 	return (0);
 }
 
@@ -716,13 +789,13 @@ t_bool load_configuration(t_game *game)
 {
 	game->win = mlx_new_window(game->mlx, game->config.window_width, game->config.window_height, "mlx");// error
 	game->data.img = mlx_new_image(game->mlx, game->config.window_width, game->config.window_height);// error
-	game->sprite_pos = malloc_sprite_ary(game);
+	game->sprite_pos = malloc_sprite_ary(game);// error
+	game->collisions = malloc_collisions(game);// error
 
-	
 	game->data.addr = mlx_get_data_addr(game->data.img, &(game->data.bits_per_pixel), &(game->data.line_length), &(game->data.endian));
 	game->fov = FOV * (PI / 180);
 	game->ray_max = game->config.window_width / COLUMUN_WIDTH;
-	game->update = TRUE;
+	game->view_plane_distance = (game->config.window_width / 2) / normalized_angle(tan(game->fov/2));
 	init_player(&(game->player), &(game->config));
 	return TRUE;
 }
@@ -747,7 +820,8 @@ int main(int argc, char **argv)
 	if (!load_configuration(game))
 		fprintf(stderr,"a");
 	
-	mlx_hook(game->win, X_EVENT_KEY_PRESS, (1L<<0), &deal_key, game);
+	mlx_hook(game->win, X_EVENT_KEY_PRESS, (1L<<0), &press_key, game);
+	mlx_hook(game->win, X_EVENT_KEY_RELEASE, (1L<<1), &release_key, game);
 	mlx_loop_hook(game->mlx, &main_loop, game);
 	mlx_loop(game->mlx);
 }

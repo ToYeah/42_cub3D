@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/16 02:33:18 by totaisei          #+#    #+#             */
-/*   Updated: 2020/12/28 10:17:30 by totaisei         ###   ########.fr       */
+/*   Updated: 2020/12/29 15:44:16 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,6 +39,8 @@
 #define ITEM_CHAR '@'
 #define WALL_CHAR '1'
 #define GRIDSIZE 32
+#define MOVE_SPEED 0.5;
+#define ROTATE_SPEED (0.5 * (PI / 180))
 
 typedef struct	s_vector
 {
@@ -95,10 +97,13 @@ typedef struct	s_player
 	double verticalDirection;
 	double horizontalDirection;
 	double rotationAngle;
-	double moveSpeed;
-	double rotationSpeed;
 }				t_player;
 
+typedef struct	s_collision
+{
+	double view_length;
+	double length;
+}				t_collision;
 
 
 
@@ -110,10 +115,11 @@ typedef struct	s_game
 	t_player player;
 	t_config config;
 	char **map;
-	t_bool update;
 	double fov;
 	int ray_max;
 	t_vector *sprite_pos;
+	double view_plane_distance;
+	t_collision *collisions;
 }				t_game;
 
 
@@ -129,4 +135,10 @@ t_vector vector_constructor(double x, double y);
 
 t_vector *malloc_sprite_ary(t_game *game);
 
+t_collision *malloc_collisions(t_game *game);
+
+
+double	calc_distance_vector(t_vector start, t_vector end);
+
+double	calc_sprite_theta(t_vector *player_pos, t_vector *sprite_pos);
 #endif
