@@ -4,15 +4,9 @@
 #include <errno.h>
 #include <string.h>
 
-
-
-
-int     main(int argc, char **argv)
+int     main()
 {
-	printf("\n%:vd", 1);
-	printf("\n%;vd", 1);
-	printf("\n%:qd", 1);
-	printf("\n%:kd", 1);
-	printf("\n%!vd", 1);
-	printf("\n%lvd", 1);
+	int ary = {3,4,5,8,1,2,7,6,9,0};
+	int size = 10;
+
 }

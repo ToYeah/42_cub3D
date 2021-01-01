@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/16 03:40:39 by totaisei          #+#    #+#             */
-/*   Updated: 2020/12/29 15:45:38 by totaisei         ###   ########.fr       */
+/*   Updated: 2021/01/01 10:46:03 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -471,16 +471,16 @@ void map_print(t_game *game)
 	}
 }
 
-t_vector *malloc_sprite_ary(t_game *game)
+t_sprite *malloc_sprite_ary(t_game *game)
 {
 	int index_x;
 	int index_y;
 	int ary_index;
-	t_vector *result;
+	t_sprite *result;
 
 	index_y = 0;
 	ary_index = 0;
-	if(!(result = malloc(sizeof(t_vector) * game->config.sprite_count)))
+	if(!(result = malloc(sizeof(t_sprite) * game->config.sprite_count)))
 		return NULL;
 	while(index_y < game->config.map_height)
 	{
@@ -489,8 +489,9 @@ t_vector *malloc_sprite_ary(t_game *game)
 		{
 			if(game->map[index_y][index_x] == ITEM_CHAR)
 			{
-				result[ary_index] = vector_constructor
+				result[ary_index].pos = vector_constructor
 				(index_x * GRIDSIZE + GRIDSIZE / 2,index_y * GRIDSIZE + GRIDSIZE / 2);
+				result[ary_index].distance = 0;
 				ary_index++;
 			}
 			index_x++;

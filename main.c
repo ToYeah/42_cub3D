@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/08 06:26:02 by totaisei          #+#    #+#             */
-/*   Updated: 2020/12/29 16:14:39 by totaisei         ###   ########.fr       */
+/*   Updated: 2021/01/01 15:03:39 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -97,8 +97,8 @@ double	select_start_angle(char c)
 void	init_player(t_player *player, t_config *conf)
 {
 	player->pos = vector_constructor(
-	conf->start_x * GRIDSIZE + GRIDSIZE / 2,
-	conf->start_y * GRIDSIZE + GRIDSIZE / 2);
+	(conf->start_x * GRIDSIZE + GRIDSIZE / 2) + 0.1,
+	(conf->start_y * GRIDSIZE + GRIDSIZE / 2) + 0.1);
 	player->radius = 3;
 	player->turnDirection = 0;
 	player->verticalDirection = 0;
@@ -306,8 +306,8 @@ void put_minisprite(t_game *game)
 	i = 0;
 	while(i < game->config.sprite_count)
 	{
-		sprite_angle = calc_sprite_theta(&(game->player.pos), &(game->sprite_pos[i]));
-		distance = calc_distance_vector(game->player.pos, game->sprite_pos[i]);
+		sprite_angle = calc_sprite_theta(game->player.pos, game->sprites[i].pos);
+		distance = calc_distance_vector(game->player.pos, game->sprites[i].pos);
 		angle_width = normalized_angle(atan2(GRIDSIZE / 2, distance));
 		put_line(&(game->data), vector_constructor(
 		game->player.pos.x * MINI_MAP_SCALE + distance * cos(sprite_angle + angle_width) * MINI_MAP_SCALE, 
@@ -505,6 +505,8 @@ void put_wall_texture(t_game *game, t_wall *wall, t_texture *texture)
 	tex.y = 0;
 	wall_y = 0;
 	wall->win_y = offset + wall_y;
+	if (wall->win_y < 0)
+		wall_y = -wall->win_y;
 	while(wall_y < wall->wall_height && wall->win_y < game->config.window_height)
 	{
 		if (0 <= wall->win_y && wall->win_y <= game->config.window_height)
@@ -533,10 +535,11 @@ void put_one_colmun(t_game *game, int i, t_ray *ray, double wall_height)
 		put_wall_texture(game, &wall, &(game->config.west_texture));
 }
 
-double calc_view_wall_height(t_game *game, t_vector collision, double angle)
+double calc_view_wall_height(t_game *game, double view_length)
 {
-	return (GRIDSIZE / (calc_distance_vector(game->player.pos, collision) *
-		cos(angle - game->player.rotationAngle)) * game->view_plane_distance);
+	if (view_length == 0)
+		view_length = 0.3;
+	return (GRIDSIZE / view_length * game->view_plane_distance);
 }
 
 void	cast_all_ray(t_game *game)
@@ -552,8 +555,9 @@ void	cast_all_ray(t_game *game)
 		cast_single_ray(game, &ray);
 		game->collisions[count].length = calc_distance_vector(game->player.pos, ray.collision_point);
 		game->collisions[count].view_length = game->collisions[count].length * cos(ray.angle - game->player.rotationAngle);
+		
 		put_one_colmun(game, count, &ray, calc_view_wall_height(
-			game, ray.collision_point, ray.angle
+			game,  game->collisions[count].view_length
 		));
 		ray.angle += game->fov / game->ray_max;
 		count++;
@@ -561,13 +565,13 @@ void	cast_all_ray(t_game *game)
 	
 }
 
-double	calc_sprite_theta(t_vector *player_pos, t_vector *sprite_pos)
+double	calc_sprite_theta(t_vector player_pos, t_vector sprite_pos)
 {
 	t_vector diff;
 	double result;
 
-	diff.x = player_pos->x - sprite_pos->x;
-	diff.y = player_pos->y - sprite_pos->y;
+	diff.x = player_pos.x - sprite_pos.x;
+	diff.y = player_pos.y - sprite_pos.y;
 
 	result = atan2(diff.y , diff.x) + PI;
 	return result;
@@ -596,14 +600,16 @@ void	draw_sprtite(t_game *game, t_vector win_pos, int vwh, double length)
 	int color;
 
 	i = 0;
-	while(i < vwh)
+	if (win_pos.y < 0)
+		i = -win_pos.y;
+	while(i < vwh && (win_pos.y + i) < game->config.window_height)
 	{
 		j = 0;
-		while(j < vwh)
+		if (win_pos.x < 0)
+			j = -win_pos.x;
+		while(j < vwh && (win_pos.x + j) < game->config.window_width)
 		{
-			if(0 <= (win_pos.x + j) && (win_pos.x + j) < game->config.window_width
-			&& 0 <= (win_pos.y + i) && (win_pos.y + i) < game->config.window_height
-			&& game->collisions[(int)round(win_pos.x + j)].view_length > length)
+			if(game->collisions[(int)round(win_pos.x + j)].view_length > length)
 			{
 				color = extract_color(&(game->config.sprite_texture),
 				(double)j / vwh * game->config.sprite_texture.width,
@@ -630,11 +636,48 @@ void	put_one_sprite(t_game *game, t_vector sprite_pos, double angle, double dist
 	if(ratio > 2)
 		ratio -= 2 * PI;
 
-	vwh = (int)round(calc_view_wall_height(game, sprite_pos, angle));
+	vwh = (int)round((GRIDSIZE / (calc_distance_vector(game->player.pos, sprite_pos)
+	* cos(angle - game->player.rotationAngle)) * game->view_plane_distance));
 	win_pos = vector_constructor
 	((ratio * game->config.window_width) - vwh / 2,game->config.window_height/2 - vwh/2);
 	sprite_view_length = distance * cos(angle - game->player.rotationAngle);
 	draw_sprtite(game, win_pos, vwh, sprite_view_length);
+}
+
+void	calc_sprites_distance(t_game *game)
+{
+	int i;
+
+	i = 0;
+	while(i < game->config.sprite_count)
+	{
+		game->sprites[i].distance = calc_distance_vector(game->player.pos, game->sprites[i].pos);
+		i++;
+	}
+}
+
+void	*sort_sprites(t_sprite *base, int size)
+{
+	int i;
+	int j;
+	t_sprite tmp;
+
+	i = size;
+	while(i)
+	{
+		j = 0;
+		while(j < size - 1)
+		{
+			if(base[j].distance < base[j + 1].distance)
+			{
+				tmp = base[j];
+				base[j] = base[j + 1];
+				base[j + 1] = tmp;
+			}
+			j++;
+		}
+		i--;
+	}
 }
 
 void	put_sprites(t_game *game)
@@ -642,19 +685,21 @@ void	put_sprites(t_game *game)
 	int i;
 	double sprite_angle;
 	double angle_width;
-	double distance;
 
+	calc_sprites_distance(game);
+	sort_sprites(game->sprites, game->config.sprite_count);
 	i = 0;
 	while(i < game->config.sprite_count)
 	{
-		distance = calc_distance_vector(game->player.pos, game->sprite_pos[i]);
-		sprite_angle = calc_sprite_theta(&(game->player.pos), &(game->sprite_pos[i]));
-		angle_width = normalized_angle(atan2(GRIDSIZE / 2 , distance));
+		sprite_angle = calc_sprite_theta(game->player.pos, game->sprites[i].pos);
+		angle_width = normalized_angle(atan2(GRIDSIZE / 2 , game->sprites[i].distance));
 
 		if(calc_angle_diff(game, normalized_angle(sprite_angle), FALSE) <= game->fov ||
 		calc_angle_diff(game, normalized_angle(sprite_angle + angle_width), FALSE) <= game->fov ||
-		calc_angle_diff(game, normalized_angle(sprite_angle - angle_width), FALSE) <= game->fov)
-			put_one_sprite(game, game->sprite_pos[i], sprite_angle, distance);
+		calc_angle_diff(game, normalized_angle(sprite_angle - angle_width), FALSE) <= game->fov ||
+		calc_angle_diff(game, normalized_angle(sprite_angle + angle_width / 2), FALSE) <= game->fov ||
+		calc_angle_diff(game, normalized_angle(sprite_angle - angle_width / 2), FALSE) <= game->fov)
+			put_one_sprite(game, game->sprites[i].pos, sprite_angle, game->sprites[i].distance);
 		i++;
 	}
 }
@@ -705,8 +750,8 @@ int	main_loop(t_game *game)
 	update_player_pos(game, &(game->player));
 	put_background(game);
 	cast_all_ray(game);
-	put_minimap(game);
 	put_sprites(game);
+	put_minimap(game);
 	mlx_put_image_to_window(game->mlx, game->win, game->data.img, 0, 0);
 	return (0);
 }
@@ -789,7 +834,7 @@ t_bool load_configuration(t_game *game)
 {
 	game->win = mlx_new_window(game->mlx, game->config.window_width, game->config.window_height, "mlx");// error
 	game->data.img = mlx_new_image(game->mlx, game->config.window_width, game->config.window_height);// error
-	game->sprite_pos = malloc_sprite_ary(game);// error
+	game->sprites = malloc_sprite_ary(game);// error
 	game->collisions = malloc_collisions(game);// error
 
 	game->data.addr = mlx_get_data_addr(game->data.img, &(game->data.bits_per_pixel), &(game->data.line_length), &(game->data.endian));
@@ -818,7 +863,7 @@ int main(int argc, char **argv)
 	if (!set_configuration(game, argv[1]))
 		return free_all_cub(game);
 	if (!load_configuration(game))
-		fprintf(stderr,"a");
+		return 1;
 	
 	mlx_hook(game->win, X_EVENT_KEY_PRESS, (1L<<0), &press_key, game);
 	mlx_hook(game->win, X_EVENT_KEY_RELEASE, (1L<<1), &release_key, game);
