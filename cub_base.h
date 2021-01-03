@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/16 02:33:18 by totaisei          #+#    #+#             */
-/*   Updated: 2021/01/01 15:09:31 by totaisei         ###   ########.fr       */
+/*   Updated: 2021/01/03 20:24:47 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,10 +22,12 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <math.h>
-#include <fcntl.h>
 #include <errno.h>
 #include <string.h>
 #include <sysexits.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "my_libft/libft.h"
 
@@ -38,9 +40,13 @@
 #define FLOOR_CHAR '-'
 #define ITEM_CHAR '@'
 #define WALL_CHAR '1'
+#define SPACE_CHAR ' '
 #define GRIDSIZE 32
-#define MOVE_SPEED 1.5;
-#define ROTATE_SPEED (1 * (PI / 180))
+#define MOVE_SPEED 0.5;
+#define ROTATE_SPEED (0.5 * (PI / 180))
+
+#define FILE_H_SIZE 14
+#define INFO_H_SIZE 40
 
 typedef struct	s_vector
 {
@@ -77,6 +83,7 @@ typedef struct	s_config
 	int			start_y;
 	int			sprite_count;
 	char		start_rotation;
+	t_bool		is_save;
 }				t_config;
 
 
@@ -132,7 +139,7 @@ t_bool set_configuration(t_game *game, char *path);
 
 char **malloc_map(size_t x, size_t y);
 
-t_bool valid_runtime_arg(int argc, char **argv);
+t_bool valid_runtime_arg(int argc, char **argv, t_bool *is_save);
 
 t_bool put_err_msg(char *err_msg);
 
@@ -146,4 +153,5 @@ t_collision *malloc_collisions(t_game *game);
 double	calc_distance_vector(t_vector start, t_vector end);
 
 double	calc_sprite_theta(t_vector player_pos, t_vector sprite_pos);
+void exit_cub(t_game *game, int status);
 #endif

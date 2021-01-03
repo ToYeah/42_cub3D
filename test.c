@@ -3,10 +3,11 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 int     main()
 {
-	int ary = {3,4,5,8,1,2,7,6,9,0};
-	int size = 10;
-
 }

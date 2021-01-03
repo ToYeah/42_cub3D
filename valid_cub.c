@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/16 03:40:39 by totaisei          #+#    #+#             */
-/*   Updated: 2021/01/01 10:46:03 by totaisei         ###   ########.fr       */
+/*   Updated: 2021/01/03 18:58:54 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -208,7 +208,7 @@ t_status open_texture(t_game *game, t_texture *texture, t_ident_line input)
 
 t_status valid_texture_path(t_game *game, t_ident_line input)
 {
-	if (*(input.status) != NOT_ENTERED || game->config.map_flag)
+	if (*(input.status) != NOT_ENTERED || game->config.map_flag || ft_strrncmp(input.line, ".xpm", 4))
 		return FAILURE;
 	while(*input.line != ' ')
 		input.line++;
@@ -521,19 +521,20 @@ t_bool set_configuration(t_game *game, char *path)
 		return put_err_msg("No starting point.");
 	if (!cub_flood_fill(game->map, game->config.start_x, game->config.start_y))
 		return put_err_msg("Unclosed map.");
-	//map_print(game);
 	return TRUE;
 }
 
-t_bool valid_runtime_arg(int argc, char **argv)
+t_bool valid_runtime_arg(int argc, char **argv, t_bool *is_save)
 {
 	if (argc == 1)
 		return put_err_msg("too few arguments to cub3D.");
 	if (argc > 3)
-		return put_err_msg("Too many arguments for cub3D");
+		return put_err_msg("Too many arguments to cub3D");
 	if (argc > 1 && ft_strrncmp(argv[1], ".cub", 4))
 		return put_err_msg("The second argument is incorrect");
 	if (argc == 3 && ft_strncmp(argv[2], "--save", 7))
 		return put_err_msg("The third argument is incorrect");
+	else if (argc == 3)
+		*is_save = TRUE;
 	return TRUE;
 }

@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/08 06:26:02 by totaisei          #+#    #+#             */
-/*   Updated: 2021/01/01 15:03:39 by totaisei         ###   ########.fr       */
+/*   Updated: 2021/01/03 20:25:17 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,6 +42,7 @@
 #define X_EVENT_KEY_PRESS		2
 #define X_EVENT_KEY_EXIT		17
 #define X_EVENT_KEY_RELEASE		3
+#define X_EVENT_CLIENT_MESSAGE	33
 
 typedef struct	s_ray
 {
@@ -127,8 +128,8 @@ void	put_square(t_data *data, int x, int y, int fill)
 	int index_y;
 	int map_size = GRIDSIZE * MINI_MAP_SCALE;
 
-	pos_x = x * map_size ;//+ x *5;
-	pos_y = y * map_size ;//+ y *5;
+	pos_x = x * map_size ;
+	pos_y = y * map_size ;
 	
 	index_y = map_size;
 	while(index_y != 0)
@@ -342,25 +343,35 @@ void put_minimap(t_game *game)
 	put_minisprite(game);
 }
 
-int validate_collision(t_game *game, t_vector pos)// char **map;
+int validate_new_position(t_game *game, t_vector pos)
 {
 	int x;
 	int y;
 
 	x = (floor(pos.x / GRIDSIZE));
 	y = (floor(pos.y / GRIDSIZE));
-	if(0 <= x && x < MAX_MAP_SIZE && 0 <= y && y < MAX_MAP_SIZE && game->map[y][x] != WALL_CHAR)
+	if(0 <= x && x < MAX_MAP_SIZE && 0 <= y && y < MAX_MAP_SIZE
+	&& game->map[y][x] != WALL_CHAR
+	&& game->map[y][x] != SPACE_CHAR)
 		return TRUE;
 	return FALSE;
 }
 
 int validate_collision_direction(t_game *game, t_vector pos, int dir, int horizontal)
 {
+	int x;
+	int y;
+
 	if (dir == UP && horizontal == TRUE)
 		pos.y--;
 	if (dir == LEFT && horizontal == False)
 		pos.x--;
-	return validate_collision(game, pos);
+
+	x = (floor(pos.x / GRIDSIZE));
+	y = (floor(pos.y / GRIDSIZE));
+	if(0 <= x && x < MAX_MAP_SIZE && 0 <= y && y < MAX_MAP_SIZE && game->map[y][x] != WALL_CHAR)
+		return TRUE;
+	return FALSE;
 }
 
 void 	update_player_pos(t_game *game, t_player *player)
@@ -375,7 +386,7 @@ void 	update_player_pos(t_game *game, t_player *player)
 	new_pos.y += sin(player->rotationAngle) * player->verticalDirection * MOVE_SPEED;
 	new_pos.x += (cos(player->rotationAngle + PI/2)) * player->horizontalDirection * MOVE_SPEED;
 	new_pos.y += (sin(player->rotationAngle + PI/2)) * player->horizontalDirection * MOVE_SPEED;
-	if(validate_collision(game, new_pos))
+	if(validate_new_position(game, new_pos))
 		player->pos = new_pos;
 }
 
@@ -459,7 +470,7 @@ void	set_ray_direction(t_ray *ray)
 		ray->horizontal_direction = RIGHT;
 }
 
-void	cast_single_ray(t_game *game, t_ray *ray)//, char **map)
+void	cast_single_ray(t_game *game, t_ray *ray)
 {
 	t_vector vertical_intersection;
 	t_bool horizontal_flag;
@@ -493,7 +504,7 @@ void	set_wall_pos(t_ray *ray, double wall_height, int x, t_wall *wall)
 	wall->offset_x = (tmp / 32);
 }
 
-void put_wall_texture(t_game *game, t_wall *wall, t_texture *texture)
+void put_wall_texture(t_game *game, t_wall *wall, t_texture *texture, t_bool rev)
 {
 	t_vector tex;
 	double offset;
@@ -501,12 +512,13 @@ void put_wall_texture(t_game *game, t_wall *wall, t_texture *texture)
 	int color;
 
 	offset = (game->config.window_height / 2) - (wall->wall_height / 2);
-	tex.x = wall->offset_x * texture->width;
-	tex.y = 0;
+	tex = vector_constructor(wall->offset_x * texture->width, 0);
+	if(rev)
+		tex.x = texture->width - tex.x;
 	wall_y = 0;
+	if (offset < 0)
+		wall_y = -offset;
 	wall->win_y = offset + wall_y;
-	if (wall->win_y < 0)
-		wall_y = -wall->win_y;
 	while(wall_y < wall->wall_height && wall->win_y < game->config.window_height)
 	{
 		if (0 <= wall->win_y && wall->win_y <= game->config.window_height)
@@ -526,13 +538,13 @@ void put_one_colmun(t_game *game, int i, t_ray *ray, double wall_height)
 
 	set_wall_pos(ray, wall_height, i, &wall);
 	if(ray->vertical_direction == UP && ray->select_horizontal == TRUE)
-		put_wall_texture(game, &wall, &(game->config.south_texture));
+		put_wall_texture(game, &wall, &(game->config.south_texture), FALSE);
 	else if(ray->vertical_direction == DOWN && ray->select_horizontal == TRUE)
-		put_wall_texture(game, &wall, &(game->config.north_texture));
+		put_wall_texture(game, &wall, &(game->config.north_texture), TRUE);
 	else if(ray->horizontal_direction == LEFT && ray->select_horizontal == FALSE)
-		put_wall_texture(game, &wall, &(game->config.east_texture));
+		put_wall_texture(game, &wall, &(game->config.east_texture), TRUE);
 	else
-		put_wall_texture(game, &wall, &(game->config.west_texture));
+		put_wall_texture(game, &wall, &(game->config.west_texture), FALSE);
 }
 
 double calc_view_wall_height(t_game *game, double view_length)
@@ -554,7 +566,7 @@ void	cast_all_ray(t_game *game)
 	{
 		cast_single_ray(game, &ray);
 		game->collisions[count].length = calc_distance_vector(game->player.pos, ray.collision_point);
-		game->collisions[count].view_length = game->collisions[count].length * cos(ray.angle - game->player.rotationAngle);
+		game->collisions[count].view_length = game->collisions[count].length * cos(normalized_angle(ray.angle - game->player.rotationAngle));
 		
 		put_one_colmun(game, count, &ray, calc_view_wall_height(
 			game,  game->collisions[count].view_length
@@ -707,7 +719,7 @@ void	put_sprites(t_game *game)
 int		press_key(int key_code, t_game *game)
 {
 	if (key_code == KEY_ESC)
-		exit(0);
+		exit_cub(game, EXIT_SUCCESS);
 	else if (key_code == KEY_W)
 		game->player.verticalDirection = 1;
 	else if (key_code == KEY_S)
@@ -726,7 +738,7 @@ int		press_key(int key_code, t_game *game)
 int		release_key(int key_code, t_game *game)
 {
 	if (key_code == KEY_ESC)
-		exit(0);
+		exit_cub(game, EXIT_SUCCESS);
 	else if (key_code == KEY_W)
 		game->player.verticalDirection = 0;
 	else if (key_code == KEY_S)
@@ -742,16 +754,71 @@ int		release_key(int key_code, t_game *game)
 	return (0);
 }
 
+void write_bmp_file(t_game *game, int fd)
+{
+	unsigned int size;
+	unsigned int offset;
+
+	offset = FILE_H_SIZE + INFO_H_SIZE;
+	size = offset + (game->config.window_height * game->config.window_width * 4);
+	write(fd, "BM", 2);
+	write(fd, &size, 4);
+	write(fd, "\0\0", 2);
+	write(fd, "\0\0", 2);
+	write(fd, &offset, 4);
+}
+
+void write_bmp_information(t_game *game, int fd)
+{
+	unsigned int info_size;
+	unsigned int plane;
+	unsigned int bpp;
+	int i;
+
+	i = 0;
+	info_size = INFO_H_SIZE;
+	plane = 1;
+	bpp = 32;
+	write(fd, &info_size, 4);
+	write(fd, &(game->config.window_width), 4);
+	write(fd, &(game->config.window_height), 4);
+	write(fd, &plane, 2);
+	write(fd, &bpp, 2);
+	while(i++ < 24)
+		write(fd, "\0", 1);
+}
+
+void write_bmp_pixel(t_game *game, int fd)
+{
+	int index_x;
+	int index_y;
+	int *color_p;
+	int color;
+
+	index_y = 0;
+	while(index_y < game->config.window_height)
+	{
+		index_x = 0;
+		while(index_x < game->config.window_width)
+		{
+			color_p = (int *)(game->data.addr +
+			((game->config.window_height - index_y - 1) * (game->data.line_length)) +
+			index_x * (game->data.bits_per_pixel / 8));
+			color = *color_p;
+			write(fd, &color, 4);
+			index_x++;
+		}
+		index_y++;
+	}
+}
+
 int	main_loop(t_game *game)
 {
-	t_vector centor;
-	t_vector end;
-
 	update_player_pos(game, &(game->player));
 	put_background(game);
 	cast_all_ray(game);
 	put_sprites(game);
-	put_minimap(game);
+	//put_minimap(game);
 	mlx_put_image_to_window(game->mlx, game->win, game->data.img, 0, 0);
 	return (0);
 }
@@ -776,18 +843,18 @@ t_bool init_game(t_game **game)
 	t_game *result;
 	
 	if (!(result = malloc(sizeof(t_game))))
-		return FALSE;
+		return put_err_msg(strerror(errno));
 	ft_memset(result, 0, sizeof(t_game));
 	if ((!(result->mlx = mlx_init())))
 	{
 		free(result);
-		return FALSE;
+		return put_err_msg(strerror(errno));
 	}
 	if (!(result->map = malloc_map(MAX_MAP_SIZE, MAX_MAP_SIZE)))
 	{
 		mlx_destroy_display(result->mlx);
 		free(result);
-		return FALSE;
+		return put_err_msg(strerror(errno));
 	}
 	*game = result;
 	return TRUE;
@@ -816,33 +883,38 @@ int free_all_cub(t_game *game)
 	if (game)
 	{
 		if (game->map)
-		{
-			if (game->mlx)
-			{
-				free_mlx_conf(game);
-				mlx_destroy_display(game->mlx);
-				free(game->mlx);
-			}
 			map_free(game->map);
+		if (game->collisions)
+			free(game->collisions);
+		if (game->sprites)
+			free(game->sprites);
+		if (game->mlx)
+		{
+			mlx_loop_end(game->mlx);
+			free_mlx_conf(game);
+			mlx_destroy_display(game->mlx);
+			free(game->mlx);
 		}
 		free(game);
 	}
 	return 1;
 }
 
-t_bool load_configuration(t_game *game)
+t_bool load_configuration(t_game *game, t_bool is_save)
 {
-	game->win = mlx_new_window(game->mlx, game->config.window_width, game->config.window_height, "mlx");// error
-	game->data.img = mlx_new_image(game->mlx, game->config.window_width, game->config.window_height);// error
-	game->sprites = malloc_sprite_ary(game);// error
-	game->collisions = malloc_collisions(game);// error
-
+	if(!is_save)
+		game->win = mlx_new_window(game->mlx, game->config.window_width, game->config.window_height, "mlx");
+	game->data.img = mlx_new_image(game->mlx, game->config.window_width, game->config.window_height);
+	game->sprites = malloc_sprite_ary(game);
+	game->collisions = malloc_collisions(game);
+	if(!game->data.img || !game->sprites || !game->collisions || (!is_save && !game->win))
+		return put_err_msg(strerror(errno));
 	game->data.addr = mlx_get_data_addr(game->data.img, &(game->data.bits_per_pixel), &(game->data.line_length), &(game->data.endian));
 	game->fov = FOV * (PI / 180);
 	game->ray_max = game->config.window_width / COLUMUN_WIDTH;
-	game->view_plane_distance = (game->config.window_width / 2) / normalized_angle(tan(game->fov/2));
+	game->view_plane_distance = (game->config.window_width / 2) / normalized_angle(tan(game->fov / 2));
 	init_player(&(game->player), &(game->config));
-	return TRUE;
+	return (TRUE);
 }
 
 void exit_cub(t_game *game, int status)
@@ -851,22 +923,54 @@ void exit_cub(t_game *game, int status)
 	exit(status);
 }
 
+void save_screenshot(t_game *game)
+{
+	int fd;
+
+	update_player_pos(game, &(game->player));
+	put_background(game);
+	cast_all_ray(game);
+	put_sprites(game);
+	put_minimap(game);
+	fd = open("./screenshot.bmp", O_RDWR | O_CREAT, S_IRWXU | S_IRWXG | S_IRWXO);
+	if(fd < 0)
+	{
+		put_err_msg(strerror(errno));
+		exit_cub(game, EXIT_FAILURE);
+	}
+	write_bmp_file(game, fd);
+	write_bmp_information(game, fd);
+	write_bmp_pixel(game, fd);
+	close(fd);
+	exit_cub(game, EXIT_SUCCESS);
+}
+
+int press_red_cross(t_game *game)
+{
+	exit_cub(game, EXIT_SUCCESS);
+	return (0);
+}
+
 int main(int argc, char **argv)
 {
 	t_game *game;
+	t_bool is_save;
 
 	game = NULL;
-	if (!valid_runtime_arg(argc, argv))
-		exit_cub(game, EX_USAGE);
+	is_save = FALSE;
+	if (!valid_runtime_arg(argc, argv, &is_save))
+		exit_cub(game, EXIT_FAILURE);
 	if (!init_game(&game))
-		return free_all_cub(game);
+		exit_cub(game, EXIT_FAILURE);
 	if (!set_configuration(game, argv[1]))
-		return free_all_cub(game);
-	if (!load_configuration(game))
-		return 1;
-	
+		exit_cub(game, EXIT_FAILURE);
+	if (!load_configuration(game, is_save))
+		exit_cub(game, EXIT_FAILURE);
+	if(is_save)
+		save_screenshot(game);
 	mlx_hook(game->win, X_EVENT_KEY_PRESS, (1L<<0), &press_key, game);
 	mlx_hook(game->win, X_EVENT_KEY_RELEASE, (1L<<1), &release_key, game);
+	mlx_hook(game->win, X_EVENT_CLIENT_MESSAGE, (1L<<17), &press_red_cross, game);
 	mlx_loop_hook(game->mlx, &main_loop, game);
 	mlx_loop(game->mlx);
 }
