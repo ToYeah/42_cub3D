@@ -1,18 +1,20 @@
 R 500 500
 
-NO ./../texture/apex_1.xpm
-SO ./../texture/apex_1.xpm
-WE ./../texture/apex_1.xpm
-EA ./../texture/apex_1.xpm
+NO ./../texture/redbrick.xpm
+SO ./../texture/eagle.xpm
+WE ./../texture/colorstone.xpm
+EA ./../texture/bluestone.xpm
 S ./../texture/barrel.xpm
 C 100,100,255
 F 255,255,110
 
- 111111 
-10000001
-10000001
-10000001
-10111101
-10000001
-100N0001
- 111111
+11111111111111
+10000000000001
+10000111100001
+10001    10001
+1001      1001
+10001    10001
+10000111100001
+1000000W000001
+111111111111001
+1111111111111111

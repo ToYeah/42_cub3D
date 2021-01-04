@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/16 02:33:18 by totaisei          #+#    #+#             */
-/*   Updated: 2021/01/03 20:24:47 by totaisei         ###   ########.fr       */
+/*   Updated: 2021/01/04 08:29:21 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -148,7 +148,6 @@ t_vector vector_constructor(double x, double y);
 t_sprite *malloc_sprite_ary(t_game *game);
 
 t_collision *malloc_collisions(t_game *game);
-
 
 double	calc_distance_vector(t_vector start, t_vector end);
 
