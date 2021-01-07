@@ -6,18 +6,18 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/01/04 08:36:49 by totaisei          #+#    #+#             */
-/*   Updated: 2021/01/04 08:37:17 by totaisei         ###   ########.fr       */
+/*   Updated: 2021/01/04 14:26:50 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "cub_base.h"
+#include "game_engine.h"
 
-void map_free(char **map)
+static void	map_free(char **map)
 {
 	int i;
 
 	i = 0;
-	while(i < MAX_MAP_SIZE)
+	while (i < MAX_MAP_SIZE)
 	{
 		free(map[i]);
 		map[i] = NULL;
@@ -27,7 +27,7 @@ void map_free(char **map)
 	map = NULL;
 }
 
-void	free_mlx_conf(t_game *game)
+static void	free_mlx_conf(t_game *game)
 {
 	if (game->win)
 		mlx_destroy_window(game->mlx, game->win);
@@ -45,7 +45,7 @@ void	free_mlx_conf(t_game *game)
 		mlx_destroy_image(game->mlx, game->config.sprite_texture.img);
 }
 
-int free_all_cub(t_game *game)
+static void	free_all_cub(t_game *game)
 {
 	if (game)
 	{
@@ -64,10 +64,9 @@ int free_all_cub(t_game *game)
 		}
 		free(game);
 	}
-	return 1;
 }
 
-void exit_cub(t_game *game, int status)
+void		exit_cub(t_game *game, int status)
 {
 	free_all_cub(game);
 	exit(status);
