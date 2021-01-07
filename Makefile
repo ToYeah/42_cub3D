@@ -75,4 +75,6 @@ fclean: clean
 
 re: fclean all
 
+bonus: all
+
 .PHONEY	: all clean fclean re
