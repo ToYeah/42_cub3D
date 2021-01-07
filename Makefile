@@ -77,4 +77,4 @@ re: fclean all
 
 bonus: all
 
-.PHONEY	: all clean fclean re
+.PHONEY	: all clean fclean re bonus
