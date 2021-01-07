@@ -1,4 +1,4 @@
-R 1000 1000
+R 500 500
 NO ./texture/redbrick.xpm
 SO ./texture/eagle.xpm
 WE ./texture/colorstone.xpm

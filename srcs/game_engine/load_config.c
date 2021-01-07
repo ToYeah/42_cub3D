@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/01/04 09:06:55 by totaisei          #+#    #+#             */
-/*   Updated: 2021/01/06 19:08:43 by totaisei         ###   ########.fr       */
+/*   Updated: 2021/01/07 08:33:15 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -64,7 +64,7 @@ t_bool			load_configuration(t_game *game, t_bool is_save)
 	game->fov = FOV * (PI / 180);
 	game->ray_max = game->config.window_width / COLUMUN_WIDTH;
 	game->view_plane_distance =
-	(game->config.window_width / 2) / normalized_angle(tan(game->fov / 2));
+	(game->config.window_width / 2) / tan(game->fov / 2);
 	init_player(&(game->player), &(game->config));
 	return (TRUE);
 }
