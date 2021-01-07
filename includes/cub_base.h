@@ -6,23 +6,18 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/16 02:33:18 by totaisei          #+#    #+#             */
-/*   Updated: 2021/01/06 18:53:22 by totaisei         ###   ########.fr       */
+/*   Updated: 2021/01/07 08:52:19 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef CUB_BASE_H
 # define CUB_BASE_H
 
-# include <X11/Xlib.h>
-# include <sys/ipc.h>
-# include <sys/shm.h>
-# include <X11/extensions/XShm.h>
-# include <stdlib.h>
 # include <limits.h>
+# include <stdlib.h>
 # include <math.h>
 # include <errno.h>
 # include <string.h>
-# include <sysexits.h>
 # include <sys/stat.h>
 # include <fcntl.h>
 # include "mlx.h"

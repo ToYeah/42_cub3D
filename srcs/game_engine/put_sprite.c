@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/01/04 08:55:33 by totaisei          #+#    #+#             */
-/*   Updated: 2021/01/05 19:55:12 by totaisei         ###   ########.fr       */
+/*   Updated: 2021/01/07 09:28:35 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,14 +19,14 @@ static void	draw_sprtite(
 	int j;
 	int color;
 
-	i = win_pos.y < 0 ? -win_pos.y : 0;
+	i = win_pos.y < 0 ? (int)floor(-win_pos.y) : 0;
 	while (i < vwh && (win_pos.y + i) < game->config.window_height)
 	{
-		j = win_pos.x < 0 ? -win_pos.x : 0;
+		j = win_pos.x < 0 ? (int)floor(-win_pos.x) : 0;
 		while (j < vwh && (win_pos.x + j) < game->config.window_width)
 		{
-			if (game->collisions[(int)round(win_pos.x + j)]
-			.view_length > length)
+			if (game->collisions[(int)floor(win_pos.x) + j]
+			.view_length >= length)
 			{
 				color = extract_color(&(game->config.sprite_texture),
 				(double)j / vwh * game->config.sprite_texture.width,
