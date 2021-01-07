@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/01/04 13:25:11 by totaisei          #+#    #+#             */
-/*   Updated: 2021/01/04 16:50:16 by totaisei         ###   ########.fr       */
+/*   Updated: 2021/01/07 10:38:05 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,15 +23,18 @@ char			*one_char_compare(char *str, unsigned char c)
 
 static char		*is_three_nums(char *str)
 {
-	int count;
+	int		count;
+	char	*start;
 
 	count = 0;
+	start = str;
 	while (*str && ft_isdigit(*str))
 	{
 		str++;
 		count++;
 	}
-	if (count == 1 || count == 2 || count == 3)
+	if ((*start != '0' && (count == 1 || count == 2 || count == 3))
+	|| (*start == '0' && count == 1))
 		return (str);
 	return (NULL);
 }

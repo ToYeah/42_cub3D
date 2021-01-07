@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/01/04 13:20:13 by totaisei          #+#    #+#             */
-/*   Updated: 2021/01/04 17:06:17 by totaisei         ###   ########.fr       */
+/*   Updated: 2021/01/07 10:51:50 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,6 +31,8 @@ static t_bool	is_resolution_format(char *str)
 
 static t_bool	atoi_range(char *str, int max, int min, int *result)
 {
+	if (*str == '0')
+		return (FALSE);
 	*result = 0;
 	while (ft_isdigit(*str) && *result < max)
 	{

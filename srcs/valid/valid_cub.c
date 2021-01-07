@@ -6,11 +6,13 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/16 03:40:39 by totaisei          #+#    #+#             */
-/*   Updated: 2021/01/07 07:26:28 by totaisei         ###   ########.fr       */
+/*   Updated: 2021/01/07 11:30:51 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "config_validate.h"
+
+#include <stdio.h>
 
 static t_bool		is_map_line(char *str)
 {
@@ -26,13 +28,13 @@ static t_bool		is_map_line(char *str)
 	return (TRUE);
 }
 
-static t_identifier	select_identifier(char *line)
+static t_identifier	select_identifier(char *line, t_game *game)
 {
 	if (!line)
 		return (UNKNOWN);
 	if (*line == '\0')
 		return (NEWLINE);
-	if (is_map_line(line))
+	if (is_map_line(line) && game->config.finish_map_flag == FALSE)
 		return (MAP);
 	if (ft_strncmp(line, "R ", 2) == 0)
 		return (RESOLUTION);
@@ -70,7 +72,7 @@ t_bool				valid_cub(t_game *game, int fd)
 	while (gnl_result == 1)
 	{
 		gnl_result = ft_get_next_line(fd, &(ident_line.line));
-		ident_line.ident = select_identifier(ident_line.line);
+		ident_line.ident = select_identifier(ident_line.line, game);
 		ident_line.status = &(statuses[(int)ident_line.ident]);
 		*(ident_line.status) =
 		valid_funcs[(int)ident_line.ident](game, ident_line);
@@ -102,7 +104,8 @@ t_bool				valid_runtime_arg(int argc, char **argv, t_bool *is_save)
 		return (put_err_msg("too few arguments to cub3D."));
 	if (argc > 3)
 		return (put_err_msg("Too many arguments to cub3D"));
-	if (argc > 1 && ft_strrncmp(argv[1], ".cub", 4))
+	if (argc > 1 && (ft_strlen(argv[1]) < 5 || ft_strrncmp(argv[1], ".cub", 4)
+	|| argv[1][(int)ft_strlen(argv[1]) - 5] == '/'))
 		return (put_err_msg("The second argument is incorrect"));
 	if (argc == 3 && ft_strncmp(argv[2], "--save", 7))
 		return (put_err_msg("The third argument is incorrect"));

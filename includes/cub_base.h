@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/16 02:33:18 by totaisei          #+#    #+#             */
-/*   Updated: 2021/01/07 08:52:19 by totaisei         ###   ########.fr       */
+/*   Updated: 2021/01/07 10:10:34 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,6 +63,7 @@ typedef struct	s_config
 	int			sprite_count;
 	char		start_rotation;
 	t_bool		map_flag;
+	t_bool		finish_map_flag;
 	t_bool		is_save;
 	t_texture	north_texture;
 	t_texture	south_texture;

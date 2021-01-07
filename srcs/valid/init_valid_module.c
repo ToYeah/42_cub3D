@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/01/05 18:57:28 by totaisei          #+#    #+#             */
-/*   Updated: 2021/01/05 19:45:53 by totaisei         ###   ########.fr       */
+/*   Updated: 2021/01/07 10:11:03 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,7 @@ void	init_config(t_config *conf)
 	conf->sprite_count = 0;
 	conf->map_flag = FALSE;
 	conf->is_save = FALSE;
+	conf->finish_map_flag = FALSE;
 	conf->north_texture.img = NULL;
 	conf->south_texture.img = NULL;
 	conf->west_texture.img = NULL;

@@ -1,0 +1,13 @@
+R 500 500
+NO ./texture/redbrick.xpm
+SO ./texture/eagle.xpm
+WE ./texture/colorstone.xpm
+EA ./texture/bluestone.xpm
+S ./texture/barrel.xpm
+C 100,100,255
+F 255,255,110
+
+11111
+10001
+10N01
+11111
