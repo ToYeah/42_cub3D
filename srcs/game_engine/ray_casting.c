@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/01/04 09:05:33 by totaisei          #+#    #+#             */
-/*   Updated: 2021/01/05 19:55:12 by totaisei         ###   ########.fr       */
+/*   Updated: 2021/01/08 08:00:26 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -110,7 +110,7 @@ void			cast_all_ray(t_game *game)
 		cos(normalized_angle(ray.angle - game->player.rotation_angle));
 		put_one_colmun(game, count, &ray, calc_view_wall_height(
 			game, game->collisions[count].view_length));
-		ray.angle += game->fov / game->ray_max;
 		count++;
+		ray.angle = calc_angle_step(count, game);
 	}
 }

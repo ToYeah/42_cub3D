@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/01/04 09:18:55 by totaisei          #+#    #+#             */
-/*   Updated: 2021/01/06 19:15:47 by totaisei         ###   ########.fr       */
+/*   Updated: 2021/01/08 08:00:19 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,9 +24,9 @@
 # define COLUMUN_WIDTH 1
 # define MINI_MAP_SCALE 0.5
 
-# define FOV				60
+# define FOV			60
 
-# define KEY_ESC			65307
+# define KEY_ESC		65307
 # define KEY_W			119
 # define KEY_A			97
 # define KEY_S			115
@@ -64,6 +64,7 @@ double			correct_angle(double angle);
 double			normalized_angle(double angle);
 double			calc_distance_vector(t_vector start, t_vector end);
 double			calc_view_wall_height(t_game *game, double view_length);
+double			calc_angle_step(int count, t_game *game);
 int				press_key(int key_code, t_game *game);
 int				release_key(int key_code, t_game *game);
 int				press_red_cross(t_game *game);

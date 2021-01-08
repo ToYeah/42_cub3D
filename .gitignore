@@ -1,0 +1,4 @@
+*.o
+*.a
+screenshot.bmp
+cub3D

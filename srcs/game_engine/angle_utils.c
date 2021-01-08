@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/01/04 08:52:36 by totaisei          #+#    #+#             */
-/*   Updated: 2021/01/05 19:55:13 by totaisei         ###   ########.fr       */
+/*   Updated: 2021/01/08 08:34:50 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,4 +60,21 @@ double	correct_angle(double angle)
 	if (-0.0001 < angle && angle < 0.0001)
 		angle = 0.001;
 	return (angle);
+}
+
+double	calc_angle_step(int count, t_game *game)
+{
+	double step;
+	double res;
+
+	step = ((double)game->config.window_width / 2) - ((double)count);
+	if (step < 0)
+	{
+		step *= -1;
+		res = game->fov / 2 + atan2(step, game->view_plane_distance);
+	}
+	else
+		res = game->fov / 2 - atan2(step, game->view_plane_distance);
+	return (normalized_angle(
+		game->player.rotation_angle - (game->fov / 2) + res));
 }

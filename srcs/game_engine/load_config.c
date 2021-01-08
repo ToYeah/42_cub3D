@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/01/04 09:06:55 by totaisei          #+#    #+#             */
-/*   Updated: 2021/01/07 08:33:15 by totaisei         ###   ########.fr       */
+/*   Updated: 2021/01/07 20:50:24 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,7 +41,7 @@ double			calc_view_wall_height(t_game *game, double view_length)
 {
 	if (view_length == 0)
 		view_length = 0.3;
-	return (GRIDSIZE / view_length * game->view_plane_distance);
+	return ((GRIDSIZE / view_length) * game->view_plane_distance);
 }
 
 t_bool			load_configuration(t_game *game, t_bool is_save)
