@@ -2,4 +2,4 @@
 *.a
 screenshot.bmp
 cub3D
-./minilibx-linux/*
+./minilibx-linux/
