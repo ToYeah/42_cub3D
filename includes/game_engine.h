@@ -6,7 +6,7 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2021/01/04 09:18:55 by totaisei          #+#    #+#             */
-/*   Updated: 2021/01/08 08:00:19 by totaisei         ###   ########.fr       */
+/*   Updated: 2021/01/11 08:52:11 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,7 +36,7 @@
 
 # define X_EVENT_KEY_PRESS		2
 # define X_EVENT_KEY_EXIT		17
-# define X_EVENT_KEY_RELEASE		3
+# define X_EVENT_KEY_RELEASE	3
 # define X_EVENT_CLIENT_MESSAGE	33
 
 typedef struct	s_ray

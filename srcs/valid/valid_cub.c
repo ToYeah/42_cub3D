@@ -6,13 +6,11 @@
 /*   By: totaisei <totaisei@student.42tokyo.jp>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/12/16 03:40:39 by totaisei          #+#    #+#             */
-/*   Updated: 2021/01/07 11:30:51 by totaisei         ###   ########.fr       */
+/*   Updated: 2021/01/11 08:51:45 by totaisei         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "config_validate.h"
-
-#include <stdio.h>
 
 static t_bool		is_map_line(char *str)
 {
