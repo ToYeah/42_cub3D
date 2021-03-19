@@ -1,5 +1,5 @@
 # 42_cub3D
-simple 3D game like wolfenstein3D written by Clang.
+simple 3D game like wolfenstein3D.
 
 ## Overview
 
