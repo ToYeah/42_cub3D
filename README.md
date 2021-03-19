@@ -9,3 +9,6 @@ simple 3D game like wolfenstein3D written by Clang.
 * Ledt, Right to rotation.  
 * Esc to quit.  
 * red cross to quit.  
+
+## Dependent package
+[minilibx](https://github.com/42Paris/minilibx-linux)
